@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { CarDetail } from "@/components/car-detail";
-import { getCarById } from "@/lib/api";
 import { CarDetailSkeleton } from "@/components/skeleton/car-detail-skeleton";
+import { getCarById } from "@/lib/pocketbase";
 
 interface CarDetailPageProps {
   params: {

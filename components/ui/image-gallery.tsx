@@ -22,7 +22,7 @@ export const ImageGallery = ({
         sizes="(max-width: 768px) 100vw, 50vw"
       />
     </div>
-    <div className="flex gap-2 overflow-x-auto pb-2">
+    <div className="flex gap-2 overflow-x-auto p-2">
       {images.map((image, index) => (
         <button
           key={index}
