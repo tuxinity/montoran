@@ -1,6 +1,9 @@
 import { CarList } from "@/components/car-list";
+import { getCars } from "@/lib/pocketbase";
 
-export default function Home() {
+export default async function Home() {
+  const initialCars = await getCars();
+
   return (
     <main className="container mx-auto py-6 px-4 md:py-8 md:px-6">
       <div className="space-y-6">
@@ -10,7 +13,7 @@ export default function Home() {
             Choose from our selection of quality vehicles for your journey
           </p>
         </div>
-        <CarList className="pb-8" />
+        <CarList initialCars={initialCars} className="pb-8" />
       </div>
     </main>
   );

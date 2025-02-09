@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["montoran.inklusif.id"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "montoran.inklusif.id",
+        port: "",
+        pathname: "/**",
+      },
+    ],
   },
 };
 

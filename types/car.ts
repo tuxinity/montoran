@@ -35,6 +35,7 @@ export interface Car {
   condition: number;
   mileage: number;
   transmission: string;
+  description: string;
   year: number;
   images: string[];
   created: string;

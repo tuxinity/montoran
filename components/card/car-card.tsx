@@ -18,7 +18,7 @@ export function CarCard({ car }: CarCardProps) {
         <CardHeader className="p-0 space-y-0 relative">
           <Badge
             variant="secondary"
-            className="absolute left-3 top-3 z-10 bg-white/90 text-black hover:bg-white"
+            className="absolute left-3 top-3 z-10 bg-white/90 text-black hover:bg-white uppercase text-xs"
           >
             {car.expand?.model.expand?.body_type.name}
           </Badge>
