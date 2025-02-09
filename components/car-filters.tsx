@@ -104,8 +104,8 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterValues>({});
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
-  const [brands, setBrands] = useState<Map<string, Brand>>(new Map()); // O(1) lookup
-  const [bodyTypes, setBodyTypes] = useState<Map<string, BodyType>>(new Map()); // O(1) lookup
+  const [brands, setBrands] = useState<Map<string, Brand>>(new Map());
+  const [bodyTypes, setBodyTypes] = useState<Map<string, BodyType>>(new Map());
 
   const fetchData = useCallback(async () => {
     try {

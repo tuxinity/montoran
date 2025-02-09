@@ -50,7 +50,7 @@ export const ImageGallery = ({
               className="object-cover"
               sizes="80px"
               quality={60}
-              priority={index < 4} // Only prioritize first 4 thumbnails
+              priority={index < 4}
             />
           </button>
         ))}

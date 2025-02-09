@@ -19,12 +19,10 @@ export function CarList({ className = "", initialCars }: CarListProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchCars = async (query?: string, filters?: FilterValues) => {
-    // Cancel previous request if it exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    // Create new abort controller for this request
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
@@ -34,7 +32,6 @@ export function CarList({ className = "", initialCars }: CarListProps) {
       setCars(results);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        // Request was cancelled, do nothing
         return;
       }
       console.error("Error fetching cars:", error);
