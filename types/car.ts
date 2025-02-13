@@ -1,16 +1,16 @@
-interface BodyType {
+export interface BodyType {
   id: string;
   collectionId: string;
   collectionName: string;
   name: string;
 }
 
-interface Brand {
+export interface Brand {
   id: string;
   name: string;
 }
 
-interface Model {
+export interface Model {
   id: string;
   collectionId: string;
   collectionName: string;
