@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/pocketbase";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export const SidebarDashboard = () => {
@@ -12,7 +13,6 @@ export const SidebarDashboard = () => {
   };
   return (
     <div className="w-64 bg-white h-screen flex flex-col border-r border-gray-200">
-      {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-xl font-semibold flex items-center gap-2 text-gray-800">
           <svg
@@ -49,7 +49,7 @@ export const SidebarDashboard = () => {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1.5">
-        <a
+        <Link
           href="/dashboard"
           className="flex items-center px-3 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
         >
@@ -66,28 +66,8 @@ export const SidebarDashboard = () => {
               d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
             />
           </svg>
-          Overview
-        </a>
-
-        <a
-          href="/dashboard/cars"
-          className="flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg group"
-        >
-          <svg
-            className="w-5 h-5 mr-3 text-gray-500 group-hover:text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-            />
-          </svg>
           Cars
-        </a>
+        </Link>
       </nav>
 
       {/* Bottom section */}
