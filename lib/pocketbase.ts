@@ -1,7 +1,7 @@
+import Cookies from "js-cookie";
 import PocketBase from "pocketbase";
 import type { Car, Model } from "@/types/car";
 import { ClientResponseError } from "pocketbase";
-import Cookies from "js-cookie";
 import type { FilterValues } from "@/components/car-filters";
 
 const pocketbaseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL;
@@ -45,12 +45,11 @@ export const getCars = async (
       filterRules.push(`sell_price <= ${filters.maxPrice}`);
     }
 
-    console.log("Final filter:", filterRules.join(" && ")); // Debug log
-
     const records = await pb.collection("cars").getFullList<Car>({
       sort: "-created",
       expand: "model.brand,model.body_type",
       filter: filterRules.length > 0 ? filterRules.join(" && ") : undefined,
+      $autoCancel: false,
     });
 
     return records;
@@ -131,7 +130,8 @@ interface CarFormData {
 
 export const createCar = async (formData: FormData) => {
   try {
-    // 1. Create or get brand
+    const brandId = formData.get("brand") as string;
+    const bodyTypeId = formData.get("body_type") as string;
     let brand = await pb
       .collection("brand")
       .getFirstListItem(`name = "${formData.get("brand")}"`)
@@ -142,7 +142,6 @@ export const createCar = async (formData: FormData) => {
       });
     }
 
-    // 2. Create or get body type
     let bodyType = await pb
       .collection("body_type")
       .getFirstListItem(`name = "${formData.get("body_type")}"`)
@@ -153,7 +152,6 @@ export const createCar = async (formData: FormData) => {
       });
     }
 
-    // 3. Create or get model
     let model = await pb
       .collection("model")
       .getFirstListItem(`name = "${formData.get("model")}"`)
@@ -161,12 +159,11 @@ export const createCar = async (formData: FormData) => {
     if (!model) {
       model = await pb.collection("model").create({
         name: formData.get("model"),
-        brand: brand?.id,
-        body_type: bodyType?.id,
+        brand: brandId,
+        body_type: bodyTypeId,
       });
     }
 
-    // 4. Create car with the related model
     const carData = {
       model: model?.id,
       year: formData.get("year"),
@@ -178,7 +175,6 @@ export const createCar = async (formData: FormData) => {
       description: formData.get("description"),
     } as CarFormData;
 
-    // Only update images if new files are provided
     const newImages = formData.getAll("images");
     if (newImages.length > 0 && newImages[0] instanceof File) {
       carData.images = newImages;
@@ -193,7 +189,6 @@ export const createCar = async (formData: FormData) => {
 
 export const updateCar = async (id: string, formData: FormData) => {
   try {
-    // 1. Create or get brand
     let brand = await pb
       .collection("brand")
       .getFirstListItem(`name = "${formData.get("brand")}"`)
@@ -204,13 +199,11 @@ export const updateCar = async (id: string, formData: FormData) => {
       });
     }
 
-    // 2. Get selected body type
     const bodyTypeId = formData.get("body_type");
     const bodyType = await pb
       .collection("body_type")
       .getOne(bodyTypeId as string);
 
-    // 3. Create or get model
     let model = await pb
       .collection("model")
       .getFirstListItem(`name = "${formData.get("model")}"`)
@@ -223,7 +216,6 @@ export const updateCar = async (id: string, formData: FormData) => {
       });
     }
 
-    // 4. Update car with the related model
     const carData = {
       model: model?.id,
       year: formData.get("year"),
@@ -235,7 +227,6 @@ export const updateCar = async (id: string, formData: FormData) => {
       description: formData.get("description"),
     } as CarFormData;
 
-    // Only update images if new files are provided
     const newImages = formData.getAll("images");
     if (newImages.length > 0 && newImages[0] instanceof File) {
       carData.images = newImages;

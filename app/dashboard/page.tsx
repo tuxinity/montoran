@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { getCars, deleteCar, createCar, updateCar } from "@/lib/pocketbase";
-import type { Car, BodyType } from "@/types/car";
+import type { Car, BodyType, Brand } from "@/types/car";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState<FilterValues>({});
   const [search, setSearch] = useState<string>("");
   const [bodyTypes, setBodyTypes] = useState<BodyType[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const loadCars = useCallback(
     async (search?: string, filters?: FilterValues) => {
@@ -40,14 +41,18 @@ export default function DashboardPage() {
         setCars(carData);
       } catch (error) {
         console.error("Error loading cars:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load cars. Please try again.",
+        });
       } finally {
         setLoading(false);
       }
     },
-    []
+    [toast]
   );
 
-  // Create a stable debounced function
   const debouncedLoadCars = useMemo(
     () =>
       debounce((search: string, filters: FilterValues) => {
@@ -56,45 +61,60 @@ export default function DashboardPage() {
     [loadCars]
   );
 
-  // Handle search with loading state
   const handleSearch = (value: string) => {
-    setLoading(true); // Set loading before search
     setSearch(value);
     debouncedLoadCars(value, filters);
   };
 
-  // Handle filter changes with loading state
   const handleFilterChange = (newFilters: FilterValues) => {
-    setLoading(true); // Set loading before filter
     setFilters(newFilters);
     debouncedLoadCars(search, newFilters);
   };
 
-  // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
       debouncedLoadCars.cancel();
     };
   }, [debouncedLoadCars]);
 
-  // Initial load
   useEffect(() => {
-    loadCars(search, filters);
-  }, []); // Only on mount
+    loadCars();
+  }, []);
 
   useEffect(() => {
     const fetchBodyTypes = async () => {
       try {
-        const records = await pb
-          .collection("body_type")
-          .getFullList<BodyType>();
+        const records = await pb.collection("body_type").getFullList<BodyType>({
+          $autoCancel: false,
+        });
         setBodyTypes(records);
       } catch (error) {
         console.error("Error fetching body types:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load body types.",
+        });
+      }
+    };
+    const fetchBrand = async () => {
+      try {
+        const records = await pb.collection("brand").getFullList<BodyType>({
+          $autoCancel: false,
+        });
+        setBrands(records);
+      } catch (error) {
+        console.error("Error fetching body types:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load body types.",
+        });
       }
     };
     fetchBodyTypes();
-  }, []);
+    fetchBrand();
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -164,6 +184,40 @@ export default function DashboardPage() {
     setSelectedCar(null);
   };
 
+  const renderCarForm = () => {
+    // Only render if modalType is create or edit
+    if (modalType === "create") {
+      return (
+        <CarForm
+          open={true}
+          onClose={closeModal}
+          onSubmit={handleSubmit}
+          loading={loading}
+          modalType="create"
+          bodyTypes={bodyTypes}
+          brands={brands}
+        />
+      );
+    }
+
+    if (modalType === "edit" && selectedCar) {
+      return (
+        <CarForm
+          open={true}
+          onClose={closeModal}
+          onSubmit={handleSubmit}
+          loading={loading}
+          modalType="edit"
+          bodyTypes={bodyTypes}
+          selectedCar={selectedCar}
+          brands={brands}
+        />
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       <SidebarDashboard />
@@ -182,12 +236,6 @@ export default function DashboardPage() {
           </div>
 
           {/* Filters */}
-          <div className="px-6 py-4 border-t border-gray-100">
-            <CarFilters
-              onSearch={handleSearch}
-              onFilterChange={handleFilterChange}
-            />
-          </div>
         </header>
 
         {/* Main Content Area */}
@@ -196,25 +244,31 @@ export default function DashboardPage() {
             {/* Actions */}
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-800">All Cars</h2>
-              <Button
-                onClick={() => openModal("create")}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="flex px-6 py-4 border-t border-gray-100 gap-2">
+                <CarFilters
+                  onSearch={handleSearch}
+                  onFilterChange={handleFilterChange}
+                />
+                <Button
+                  onClick={() => openModal("create")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                Add New Car
-              </Button>
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Add New Car
+                </Button>
+              </div>
             </div>
 
             {/* Table Container */}
@@ -311,18 +365,7 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Car Form Dialog */}
-      {modalType && selectedCar !== null && (
-        <CarForm
-          open={modalType === "create" || modalType === "edit"}
-          onClose={closeModal}
-          onSubmit={handleSubmit}
-          loading={loading}
-          modalType={modalType}
-          bodyTypes={bodyTypes}
-          selectedCar={selectedCar}
-        />
-      )}
+      {renderCarForm()}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={modalType === "delete"} onOpenChange={() => closeModal()}>
