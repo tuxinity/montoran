@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Car, BodyType } from "@/types/car";
 
-// Add Brand type if not already defined in your types
 interface Brand {
   id: string;
   name: string;
@@ -22,7 +21,7 @@ interface CarFormProps {
   loading: boolean;
   modalType: "create" | "edit";
   bodyTypes: BodyType[];
-  brands: Brand[]; // Add brands prop
+  brands: Brand[];
   selectedCar?: Car;
 }
 
@@ -33,11 +32,11 @@ export function CarForm({
   loading,
   modalType,
   bodyTypes,
-  brands, // Add brands to destructuring
+  brands,
   selectedCar,
 }: CarFormProps) {
   const [initialValues, setInitialValues] = useState({
-    brand: selectedCar?.expand?.model?.expand?.brand?.id || "", // Change to id instead of name
+    brand: selectedCar?.expand?.model?.expand?.brand?.id || "",
     model: selectedCar?.expand?.model?.name || "",
     body_type: selectedCar?.expand?.model?.expand?.body_type?.id || "",
     year: selectedCar?.year || "",
@@ -52,7 +51,7 @@ export function CarForm({
   useEffect(() => {
     if (selectedCar) {
       setInitialValues({
-        brand: selectedCar.expand?.model?.expand?.brand?.id || "", // Change to id
+        brand: selectedCar.expand?.model?.expand?.brand?.id || "",
         model: selectedCar.expand?.model?.name || "",
         body_type: selectedCar.expand?.model?.expand?.body_type?.id || "",
         year: selectedCar.year || "",
@@ -94,7 +93,6 @@ export function CarForm({
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            {/* Changed brand input to select */}
             <div className="space-y-2">
               <label htmlFor="brand" className="text-sm font-medium">
                 Brand
@@ -114,7 +112,6 @@ export function CarForm({
                 ))}
               </select>
             </div>
-            {/* Rest of the form remains the same */}
             <div className="space-y-2">
               <label htmlFor="model" className="text-sm font-medium">
                 Model
@@ -128,7 +125,6 @@ export function CarForm({
                 required
               />
             </div>
-            {/* ... rest of your existing form fields ... */}
             <div className="space-y-2">
               <label htmlFor="body_type" className="text-sm font-medium">
                 Body Type
