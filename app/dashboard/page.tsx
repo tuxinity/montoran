@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { getCars, deleteCar, createCar, updateCar } from "@/lib/pocketbase";
+import { getCars, deleteCar, createCar, updateCar } from "@/lib/car-api";
 import type { Car, BodyType, Brand } from "@/types/car";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { CarFilters, type FilterValues } from "@/components/car-filters";
 import debounce from "lodash/debounce";
-import { pb } from "@/lib/pocketbase";
+import { pb } from "@/lib/car-api";
 import { SidebarDashboard } from "@/components/dashboard";
 import { idrFormat } from "@/utils/idr-format";
 import { CarForm } from "@/components/car-form";
@@ -116,13 +116,10 @@ export default function DashboardPage() {
     fetchBrand();
   }, [toast]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (formData: FormData) => {
     setLoading(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
-
       if (modalType === "edit" && selectedCar) {
         await updateCar(selectedCar.id, formData);
         toast({
@@ -139,12 +136,8 @@ export default function DashboardPage() {
 
       await loadCars();
       closeModal();
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err instanceof Error ? err.message : "An error occurred",
-      });
+    } catch (error) {
+      console.error("Error submitting form:", error);
     } finally {
       setLoading(false);
     }
@@ -219,7 +212,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 flex-col md:flex-row">
       <SidebarDashboard />
 
       {/* Main Content */}
@@ -234,17 +227,15 @@ export default function DashboardPage() {
               Manage your car inventory and listings
             </p>
           </div>
-
-          {/* Filters */}
         </header>
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
           <div className="w-full mx-auto">
             {/* Actions */}
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
               <h2 className="text-lg font-medium text-gray-800">All Cars</h2>
-              <div className="flex px-6 py-4 border-t border-gray-100 gap-2">
+              <div className="flex flex-col md:flex-row px-6 py-4 border-t border-gray-100 gap-2">
                 <CarFilters
                   onSearch={handleSearch}
                   onFilterChange={handleFilterChange}

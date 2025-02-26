@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { getCars } from "@/lib/pocketbase";
+import CarApi from "@/lib/car-api";
 import { CarCard } from "./card";
 import type { Car } from "@/types/car";
 import type { FilterValues } from "@/components/car-filters";
@@ -28,7 +28,7 @@ export function CarList({ className = "", initialCars }: CarListProps) {
 
     setLoading(true);
     try {
-      const results = await getCars(query, filters);
+      const results = await CarApi.getCars({ search: query, filters });
       setCars(results);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {

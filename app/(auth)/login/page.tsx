@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/lib/pocketbase";
+import AuthApi from "@/lib/auth-api";
 import { FaGoogle } from "react-icons/fa";
 import Image from "next/image";
 
@@ -19,15 +19,19 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      console.log("Login successful, redirecting to dashboard...");
+      await AuthApi.login(email, password);
       router.push("/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
+      router.refresh();
+    } catch {
       setError("Invalid email or password");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    // TODO: Implement Google login
+    alert("Google login coming soon!");
   };
 
   return (
@@ -40,11 +44,15 @@ const LoginPage = () => {
             width={200}
             height={200}
             className="mx-auto"
+            priority
           />
         </div>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email" className="sr-only">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email address
             </label>
             <input
@@ -53,15 +61,18 @@ const LoginPage = () => {
               type="email"
               autoComplete="email"
               required
-              className="block w-full px-4 py-2 border rounded-md text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Email"
+              className="mt-1 block w-full px-4 py-2 border rounded-md text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
             />
           </div>
           <div>
-            <label htmlFor="password" className="sr-only">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -70,28 +81,62 @@ const LoginPage = () => {
               type="password"
               autoComplete="current-password"
               required
-              className="block w-full px-4 py-2 border rounded-md text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Password"
+              className="mt-1 block w-full px-4 py-2 border rounded-md text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
             />
           </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
           <div>
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 px-4 bg-gray-900 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:opacity-50"
+              className="w-full py-2 px-4 bg-gray-900 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:opacity-50 transition-colors"
             >
-              {isLoading ? "Signing in..." : "Login"}
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Signing in...
+                </span>
+              ) : (
+                "Sign in"
+              )}
             </button>
           </div>
         </form>
         <div className="mt-6 text-center">
           <p className="text-gray-600">Or sign in with</p>
           <div className="flex justify-center space-x-4 mt-4">
-            <button className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+              disabled={isLoading}
+            >
               <FaGoogle className="h-6 w-6" />
             </button>
           </div>

@@ -1,8 +1,9 @@
 import { CarList } from "@/components/car-list";
-import { getCars } from "@/lib/pocketbase";
+import CarApi from "@/lib/car-api";
+import { Suspense } from "react";
 
 export default async function Home() {
-  const initialCars = await getCars();
+  const initialCars = await CarApi.getCars({});
 
   return (
     <main className="container mx-auto py-6 px-4 md:py-8 md:px-6">
@@ -13,7 +14,9 @@ export default async function Home() {
             Choose from our selection of quality vehicles for your journey
           </p>
         </div>
-        <CarList initialCars={initialCars} className="pb-8" />
+        <Suspense fallback={<div>Loading cars...</div>}>
+          <CarList initialCars={initialCars} className="pb-8" />
+        </Suspense>
       </div>
     </main>
   );
