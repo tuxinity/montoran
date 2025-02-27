@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { getCars, deleteCar, createCar, updateCar } from "@/lib/car-api";
+import CarApi from "@/lib/car-api";
 import type { Car, BodyType, Brand } from "@/types/car";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,129 +15,112 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { CarFilters, type FilterValues } from "@/components/car-filters";
 import debounce from "lodash/debounce";
-import { pb } from "@/lib/car-api";
 import { SidebarDashboard } from "@/components/dashboard";
 import { idrFormat } from "@/utils/idr-format";
 import { CarForm } from "@/components/car-form";
+
+type ModalType = "create" | "edit" | "delete" | null;
 
 export default function DashboardPage() {
   const { toast } = useToast();
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalType, setModalType] = useState<
-    "create" | "edit" | "delete" | null
-  >(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [filters, setFilters] = useState<FilterValues>({});
   const [search, setSearch] = useState<string>("");
   const [bodyTypes, setBodyTypes] = useState<BodyType[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
-  const loadCars = useCallback(
-    async (search?: string, filters?: FilterValues) => {
-      setLoading(true);
-      try {
-        const carData = await getCars(search, filters);
-        setCars(carData);
-      } catch (error) {
-        console.error("Error loading cars:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load cars. Please try again.",
-        });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [toast]
-  );
+  const loadCars = useCallback(async () => {
+    setLoading(true);
+    try {
+      const carData = await CarApi.getCars({ search, filters });
+      setCars(carData);
+    } catch (error) {
+      console.error("Error loading cars:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load cars. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [search, filters, toast]);
 
   const debouncedLoadCars = useMemo(
-    () =>
-      debounce((search: string, filters: FilterValues) => {
-        loadCars(search, filters);
-      }, 500),
+    () => debounce(() => loadCars(), 500),
     [loadCars]
   );
 
-  const handleSearch = (value: string) => {
-    setSearch(value);
-    debouncedLoadCars(value, filters);
-  };
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearch(value);
+      debouncedLoadCars();
+    },
+    [debouncedLoadCars]
+  );
 
-  const handleFilterChange = (newFilters: FilterValues) => {
-    setFilters(newFilters);
-    debouncedLoadCars(search, newFilters);
-  };
+  const handleFilterChange = useCallback(
+    (newFilters: FilterValues) => {
+      setFilters(newFilters);
+      debouncedLoadCars();
+    },
+    [debouncedLoadCars]
+  );
+
+  const loadMasterData = useCallback(async () => {
+    try {
+      const [bodyTypesData, brandsData] = await Promise.all([
+        CarApi.getBodyTypes(),
+        CarApi.getBrands(),
+      ]);
+      setBodyTypes(bodyTypesData);
+      setBrands(brandsData);
+    } catch (error) {
+      console.error("Error fetching master data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load master data.",
+      });
+    }
+  }, [toast]);
 
   useEffect(() => {
+    loadMasterData();
+    loadCars();
     return () => {
       debouncedLoadCars.cancel();
     };
-  }, [debouncedLoadCars]);
-
-  useEffect(() => {
-    loadCars();
-  }, []);
-
-  useEffect(() => {
-    const fetchBodyTypes = async () => {
-      try {
-        const records = await pb.collection("body_type").getFullList<BodyType>({
-          $autoCancel: false,
-        });
-        setBodyTypes(records);
-      } catch (error) {
-        console.error("Error fetching body types:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load body types.",
-        });
-      }
-    };
-    const fetchBrand = async () => {
-      try {
-        const records = await pb.collection("brand").getFullList<BodyType>({
-          $autoCancel: false,
-        });
-        setBrands(records);
-      } catch (error) {
-        console.error("Error fetching body types:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load body types.",
-        });
-      }
-    };
-    fetchBodyTypes();
-    fetchBrand();
-  }, [toast]);
+  }, [loadMasterData, loadCars, debouncedLoadCars]);
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
-
     try {
       if (modalType === "edit" && selectedCar) {
-        await updateCar(selectedCar.id, formData);
+        await CarApi.updateCar(selectedCar.id, formData);
         toast({
-          title: "Car updated",
-          description: "The car has been successfully updated.",
+          title: "Success",
+          description: "Car has been updated successfully.",
         });
       } else {
-        await createCar(formData);
+        await CarApi.createCar(formData);
         toast({
-          title: "Car created",
-          description: "The new car has been successfully added.",
+          title: "Success",
+          description: "New car has been added successfully.",
         });
       }
-
       await loadCars();
       closeModal();
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save car data.",
+      });
     } finally {
       setLoading(false);
     }
@@ -148,34 +131,34 @@ export default function DashboardPage() {
 
     setLoading(true);
     try {
-      await deleteCar(selectedCar.id);
+      await CarApi.deleteCar(selectedCar.id);
       await loadCars();
       closeModal();
       toast({
-        title: "Car deleted",
-        description: "The car has been successfully deleted.",
+        title: "Success",
+        description: "Car has been deleted successfully.",
       });
-    } catch (err) {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
         description:
-          err instanceof Error ? err.message : "Failed to delete car",
+          error instanceof Error ? error.message : "Failed to delete car",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const openModal = (type: "create" | "edit" | "delete", car?: Car) => {
+  const openModal = (type: ModalType, car?: Car) => {
     setModalType(type);
     setSelectedCar(car || null);
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalType(null);
     setSelectedCar(null);
-  };
+  }, []);
 
   const renderCarForm = () => {
     // Only render if modalType is create or edit

@@ -83,21 +83,24 @@ export interface FilterValues {
 }
 
 // Create/Update request types
-export interface CreateBodyTypeRequest {
-  name: string;
-}
-
-export interface CreateBrandRequest {
-  name: string;
+export interface CreateCarRequest {
+  model: string;
+  condition: number;
+  transmission: "Automatic" | "Manual";
+  mileage: number;
+  buy_price: number;
+  sell_price: number;
+  year: number;
+  description: string;
 }
 
 export interface CreateModelRequest {
   name: string;
   brand: string;
   body_type: string;
-  seats?: number;
-  cc?: number;
-  bags?: number;
+  seats: number;
+  cc: number;
+  bags: number;
 }
 
 export interface CarFormData {
