@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import AuthApi from "@/lib/auth-api";
 import Link from "next/link";

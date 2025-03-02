@@ -1,11 +1,21 @@
-import { useEffect, useState } from "react";
-import { useForm, FieldValues } from "react-hook-form";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useForm, type FieldValues } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -14,11 +24,21 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, X, Trash2, Upload } from "lucide-react";
 import type { Car, BodyType, Brand, Model } from "@/types/car";
 import Image from "next/image";
 import CarApi from "@/lib/car-api";
 import { useToast } from "@/hooks/use-toast";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface CarFormProps {
   open: boolean;
@@ -52,6 +72,8 @@ export function CarForm({
 }: CarFormProps) {
   const { toast } = useToast();
   const { register, handleSubmit, reset, watch, setValue } = useForm();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string>("");
@@ -71,20 +93,15 @@ export function CarForm({
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
 
-  // Filter models based on selected brand
   const filteredModels = selectedBrand
     ? models.filter((model) => model.brand === selectedBrand)
     : models;
 
-  // Reset form when selectedCar changes or when opening the form
   useEffect(() => {
     if (selectedCar && modalType === "edit") {
-      // Set selected brand from the car's model
       const brandId = selectedCar.expand?.model?.brand;
-
       if (brandId) setSelectedBrand(brandId);
 
-      // Reset form with car data
       const initialValues = {
         model: selectedCar.model || "",
         condition: selectedCar.condition || "",
@@ -97,13 +114,10 @@ export function CarForm({
       };
 
       reset(initialValues);
-      setIsFormChanged(false); // Reset changed state
-
-      // Set existing images
+      setIsFormChanged(false);
       setExistingImages(selectedCar.images || []);
       setImageFiles([]);
     } else if (modalType === "create") {
-      // Reset form for create mode
       reset({
         model: "",
         year: "",
@@ -120,12 +134,10 @@ export function CarForm({
     }
   }, [selectedCar, modalType, reset, open]);
 
-  // Update brands state when props change
   useEffect(() => {
     setBrandsState(brands);
   }, [brands]);
 
-  // Load models when selected brand changes
   useEffect(() => {
     const loadModels = async () => {
       if (selectedBrand) {
@@ -151,20 +163,14 @@ export function CarForm({
     loadModels();
   }, [selectedBrand, toast]);
 
-  // Update useEffect to handle preview URLs
   useEffect(() => {
-    // Cleanup old preview URLs
     previewUrls.forEach((url) => URL.revokeObjectURL(url));
-
-    // Create new preview URLs
     const urls = imageFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
 
-    // Cleanup on unmount
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [imageFiles]);
 
-  // Watch all fields to detect changes
   useEffect(() => {
     if (modalType === "edit") {
       const subscription = watch((value, { type }) => {
@@ -194,11 +200,10 @@ export function CarForm({
 
       const formData = new FormData();
       const typedData = data as FieldValues;
-
-      // Get selected model data
       const selectedModel = models.find(
         (model) => model.id === typedData.model
       );
+
       if (!selectedModel) {
         toast({
           variant: "destructive",
@@ -212,21 +217,19 @@ export function CarForm({
         model: selectedModel.name,
         brand: brandsState.find((b) => b.id === selectedBrand)?.name || "",
         body_type: selectedModel.expand?.body_type?.name || "",
-        condition: parseInt(typedData.condition),
+        condition: Number.parseInt(typedData.condition),
         transmission: typedData.transmission as "Automatic" | "Manual",
-        mileage: parseInt(typedData.mileage),
-        buy_price: parseInt(typedData.buy_price),
-        sell_price: parseInt(typedData.sell_price),
-        year: parseInt(typedData.year),
+        mileage: Number.parseInt(typedData.mileage),
+        buy_price: Number.parseInt(typedData.buy_price),
+        sell_price: Number.parseInt(typedData.sell_price),
+        year: Number.parseInt(typedData.year),
         description: typedData.description,
       };
 
-      // Convert to FormData
       Object.entries(carData).forEach(([key, value]) => {
         formData.append(key, value.toString());
       });
 
-      // Handle images
       imageFiles.forEach((file) => {
         formData.append("images", file);
       });
@@ -235,7 +238,9 @@ export function CarForm({
 
       toast({
         title: "Success",
-        description: "Car created successfully",
+        description: `Car ${
+          modalType === "create" ? "created" : "updated"
+        } successfully`,
       });
 
       onClose();
@@ -244,7 +249,9 @@ export function CarForm({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create car",
+        description: `Failed to ${
+          modalType === "create" ? "create" : "update"
+        } car`,
       });
     }
   };
@@ -267,23 +274,17 @@ export function CarForm({
 
   const handleAddBrand = async () => {
     try {
-      // Create brand with the correct data structure
       const newBrandData = await CarApi.createBrand({
         name: newBrand.name,
       });
 
-      // Update brands state
       setBrandsState((prevBrands) => [...prevBrands, newBrandData]);
-
-      // Select the newly created brand
       setSelectedBrand(newBrandData.id);
 
-      // Call the callback if provided
       if (onBrandAdded) {
         await onBrandAdded();
       }
 
-      // Reset adding state
       setIsAddingBrand(false);
       setNewBrand({ name: "" });
 
@@ -312,7 +313,6 @@ export function CarForm({
         return;
       }
 
-      // Create the new model
       const newModelData = await CarApi.createModel({
         name: newModel.name,
         brand: selectedBrand,
@@ -322,13 +322,8 @@ export function CarForm({
         bags: newModel.bags,
       });
 
-      // Add the new model to the models list so it shows in the dropdown immediately
       setModels((prevModels) => [...prevModels, newModelData]);
-
-      // Set the newly created model as selected
       setValue("model", newModelData.id);
-
-      // Reset form
       setNewModel({
         name: "",
         bodyTypeId: "",
@@ -338,11 +333,9 @@ export function CarForm({
       });
       setIsAddingModel(false);
 
-      // Refresh models from server to ensure consistency
       if (onModelAdded) {
         await onModelAdded();
       } else {
-        // If no callback provided, refresh models directly
         const updatedModels = await CarApi.getModels({
           filter: `brand="${selectedBrand}"`,
         });
@@ -374,7 +367,6 @@ export function CarForm({
         return;
       }
 
-      // Get current model ID
       const currentModelId = watch("model");
 
       const updatedModel = await CarApi.updateModel(currentModelId, {
@@ -386,14 +378,12 @@ export function CarForm({
         bags: newModel.bags,
       });
 
-      // Update the model in the local state
       setModels((prevModels) =>
         prevModels.map((model) =>
           model.id === updatedModel.id ? updatedModel : model
         )
       );
 
-      // Reset form
       setNewModel({
         name: "",
         bodyTypeId: "",
@@ -403,11 +393,9 @@ export function CarForm({
       });
       setIsAddingModel(false);
 
-      // Refresh models
       if (onModelAdded) {
         await onModelAdded();
       } else {
-        // If no callback provided, refresh models directly
         const updatedModels = await CarApi.getModels({
           filter: `brand="${selectedBrand}"`,
         });
@@ -444,439 +432,458 @@ export function CarForm({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[50%] max-h-[90vh] p-0 rounded-lg shadow-lg bg-white flex flex-col">
-        <div className="p-6 border-b border-gray-200">
-          <DialogTitle className="text-xl font-semibold text-gray-800 text-center">
+  const FormContent = (
+    <form className="space-y-6" id="car-form">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Car Selection</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="text-sm font-medium">Select Brand</Label>
+              <Popover open={isAddingBrand} onOpenChange={setIsAddingBrand}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-sm"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    New Brand
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-72 p-4"
+                  side={isDesktop ? "top" : "bottom"}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h5 className="font-medium">Add New Brand</h5>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsAddingBrand(false)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Brand Name</Label>
+                      <Input
+                        value={newBrand.name}
+                        onChange={(e) => setNewBrand({ name: e.target.value })}
+                        placeholder="Enter brand name"
+                      />
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={handleAddBrand}
+                      disabled={!newBrand.name}
+                    >
+                      Add Brand
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Select
+              value={selectedBrand}
+              onValueChange={(value) => {
+                setSelectedBrand(value);
+                setValue("model", "");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a brand" />
+              </SelectTrigger>
+              <SelectContent>
+                {brandsState.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="text-sm font-medium">Select Car Model</Label>
+              <Popover open={isAddingModel} onOpenChange={setIsAddingModel}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-sm"
+                    disabled={
+                      !selectedBrand ||
+                      (modalType === "edit" && !watch("model"))
+                    }
+                    onClick={
+                      modalType === "edit" ? handleEditModelClick : undefined
+                    }
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    {modalType === "edit" ? "Edit Model" : "New Model"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[min(80vw,320px)] p-4"
+                  side={isDesktop ? "top" : "bottom"}
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h4 className="font-medium">
+                        {modalType === "edit" ? "Edit Model" : "Add New Model"}
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsAddingModel(false)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Model Name</Label>
+                        <Input
+                          value={newModel.name}
+                          onChange={(e) =>
+                            setNewModel((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                          placeholder="Enter model name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Body Type</Label>
+                        <Select
+                          value={newModel.bodyTypeId}
+                          onValueChange={(value) =>
+                            setNewModel((prev) => ({
+                              ...prev,
+                              bodyTypeId: value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bodyTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-2">
+                          <Label>Seats</Label>
+                          <Input
+                            type="number"
+                            value={newModel.seats}
+                            onChange={(e) =>
+                              setNewModel((prev) => ({
+                                ...prev,
+                                seats: Number.parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Engine (CC)</Label>
+                          <Input
+                            type="number"
+                            value={newModel.cc}
+                            onChange={(e) =>
+                              setNewModel((prev) => ({
+                                ...prev,
+                                cc: Number.parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Bags</Label>
+                          <Input
+                            type="number"
+                            value={newModel.bags}
+                            onChange={(e) =>
+                              setNewModel((prev) => ({
+                                ...prev,
+                                bags: Number.parseInt(e.target.value) || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={
+                          modalType === "edit"
+                            ? handleEditModel
+                            : handleAddModel
+                        }
+                        disabled={
+                          !newModel.name ||
+                          !newModel.bodyTypeId ||
+                          !selectedBrand
+                        }
+                      >
+                        {modalType === "edit" ? "Update Model" : "Add Model"}
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Select
+              value={watch("model") || ""}
+              onValueChange={(value) => setValue("model", value)}
+              disabled={!selectedBrand || isLoadingModels}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    isLoadingModels ? "Loading models..." : "Choose a model"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {!isLoadingModels &&
+                  filteredModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name} - {model.expand?.body_type?.name} •{" "}
+                      {model.seats} seats • {model.cc}cc
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Car Specifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Year</Label>
+              <Input
+                type="number"
+                {...register("year", { required: true })}
+                placeholder="e.g., 2023"
+                defaultValue={selectedCar?.year || ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Condition (%)</Label>
+              <Input
+                type="number"
+                {...register("condition", {
+                  required: true,
+                  min: 0,
+                  max: 100,
+                })}
+                placeholder="e.g., 90 (0-100)"
+                defaultValue={selectedCar?.condition || ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Transmission</Label>
+              <Select
+                defaultValue={selectedCar?.transmission || ""}
+                onValueChange={(value) => setValue("transmission", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRANSMISSION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Mileage (km)</Label>
+              <Input
+                type="number"
+                {...register("mileage", { required: true })}
+                placeholder="e.g., 5000"
+                defaultValue={selectedCar?.mileage || ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Buy Price</Label>
+              <Input
+                type="number"
+                {...register("buy_price", { required: true })}
+                placeholder="Enter amount"
+                defaultValue={selectedCar?.buy_price || ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Sell Price</Label>
+              <Input
+                type="number"
+                {...register("sell_price", { required: true })}
+                placeholder="Enter amount"
+                defaultValue={selectedCar?.sell_price || ""}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Additional Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              {...register("description", { required: true })}
+              placeholder="Enter detailed description of the car..."
+              defaultValue={selectedCar?.description || ""}
+              className="min-h-24"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Images</Label>
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center">
+              <label
+                htmlFor="car-images"
+                className="cursor-pointer flex flex-col items-center justify-center gap-2"
+              >
+                <Upload className="h-8 w-8 text-gray-500" />
+                <span className="text-sm font-medium">
+                  Click to upload or drag images here
+                </span>
+                <span className="text-xs text-gray-500">
+                  JPG, PNG (max 5MB each)
+                </span>
+                <Input
+                  id="car-images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+              {existingImages.map((image, index) => (
+                <div
+                  key={index}
+                  className="relative group aspect-square bg-gray-100 rounded-md overflow-hidden"
+                >
+                  <Image
+                    src={
+                      selectedCar ? CarApi.getImageUrl(selectedCar, image) : ""
+                    }
+                    alt={`Car image ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(index)}
+                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                  >
+                    <Trash2 className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+              ))}
+              {imageFiles.map((file, index) => (
+                <div
+                  key={`new-${index}`}
+                  className="relative group aspect-square bg-gray-100 rounded-md overflow-hidden"
+                >
+                  <Image
+                    src={URL.createObjectURL(file) || "/placeholder.svg"}
+                    alt={`New car image ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                    onLoad={(e) => {
+                      URL.revokeObjectURL((e.target as HTMLImageElement).src);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                  >
+                    <Trash2 className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </form>
+  );
+
+  const FormActions = (
+    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onClose}
+        className="w-full sm:w-auto"
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="car-form"
+        onClick={handleSubmit(onSubmitForm)}
+        disabled={loading || (modalType === "edit" && !isFormChanged)}
+        className="w-full sm:w-auto"
+      >
+        {loading
+          ? "Saving..."
+          : modalType === "create"
+          ? "Create Car"
+          : "Update Car"}
+      </Button>
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-3xl max-h-[90vh] p-0">
+          <DialogTitle className="text-xl font-semibold p-4 border-b">
             {modalType === "create" ? "Add New Car" : "Edit Car"}
           </DialogTitle>
-          <DialogDescription className="text-sm text-gray-500 text-center mt-2">
-            Select brand and model to create a car listing.
+          <DialogDescription className="sr-only">
+            {modalType === "create" ? "Add a new car" : "Edit car details"}
           </DialogDescription>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-6">
-          <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
-            {/* Brand and Model Selection */}
-            <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-              <h3 className="text-lg font-medium text-gray-700">
-                Car Selection
-              </h3>
-              <div className="space-y-4">
-                {/* Brand Selection with Add Brand Button */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Select Brand</Label>
-                    <Popover
-                      open={isAddingBrand}
-                      onOpenChange={setIsAddingBrand}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-blue-600"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          New Brand
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between border-b pb-2">
-                            <h5 className="font-medium">Add New Brand</h5>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setIsAddingBrand(false)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus className="h-4 w-4 rotate-45" />
-                            </Button>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Brand Name</Label>
-                            <Input
-                              value={newBrand.name}
-                              onChange={(e) =>
-                                setNewBrand({ name: e.target.value })
-                              }
-                              placeholder="Enter brand name"
-                              className="bg-white"
-                            />
-                          </div>
-                          <Button
-                            className="w-full"
-                            onClick={handleAddBrand}
-                            disabled={!newBrand.name}
-                          >
-                            Add Brand
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <select
-                    className="w-full p-3 border rounded-lg bg-white"
-                    value={selectedBrand}
-                    onChange={(e) => {
-                      setSelectedBrand(e.target.value);
-                      // Reset model selection when brand changes
-                      setValue("model", "");
-                    }}
-                    required
-                  >
-                    <option value="">Choose a brand</option>
-                    {brandsState.map((brand) => (
-                      <option key={brand.id} value={brand.id}>
-                        {brand.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Model Selection with Add/Edit Model Button */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Select Car Model</Label>
-                    <Popover
-                      open={isAddingModel}
-                      onOpenChange={setIsAddingModel}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-blue-600"
-                          disabled={
-                            !selectedBrand ||
-                            (modalType === "edit" && !watch("model"))
-                          }
-                          onClick={
-                            modalType === "edit"
-                              ? handleEditModelClick
-                              : undefined
-                          }
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {modalType === "edit" ? "Edit Model" : "New Model"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-96 p-4">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between border-b pb-2">
-                            <h4 className="font-medium">
-                              {modalType === "edit"
-                                ? "Edit Model"
-                                : "Add New Model"}
-                            </h4>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setIsAddingModel(false)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus className="h-4 w-4 rotate-45" />
-                            </Button>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Model Name</Label>
-                              <Input
-                                value={newModel.name}
-                                onChange={(e) =>
-                                  setNewModel((prev) => ({
-                                    ...prev,
-                                    name: e.target.value,
-                                  }))
-                                }
-                                placeholder="Enter model name"
-                                className="bg-white"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label>Body Type</Label>
-                              <select
-                                value={newModel.bodyTypeId}
-                                onChange={(e) =>
-                                  setNewModel((prev) => ({
-                                    ...prev,
-                                    bodyTypeId: e.target.value,
-                                  }))
-                                }
-                                className="w-full p-2.5 border rounded-lg bg-white"
-                              >
-                                <option value="">Select Type</option>
-                                {bodyTypes.map((type) => (
-                                  <option key={type.id} value={type.id}>
-                                    {type.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="space-y-2">
-                                <Label>Seats</Label>
-                                <Input
-                                  type="number"
-                                  value={newModel.seats}
-                                  onChange={(e) =>
-                                    setNewModel((prev) => ({
-                                      ...prev,
-                                      seats: parseInt(e.target.value) || 0,
-                                    }))
-                                  }
-                                  className="bg-white"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Engine (CC)</Label>
-                                <Input
-                                  type="number"
-                                  value={newModel.cc}
-                                  onChange={(e) =>
-                                    setNewModel((prev) => ({
-                                      ...prev,
-                                      cc: parseInt(e.target.value) || 0,
-                                    }))
-                                  }
-                                  className="bg-white"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Bags</Label>
-                                <Input
-                                  type="number"
-                                  value={newModel.bags}
-                                  onChange={(e) =>
-                                    setNewModel((prev) => ({
-                                      ...prev,
-                                      bags: parseInt(e.target.value) || 0,
-                                    }))
-                                  }
-                                  className="bg-white"
-                                />
-                              </div>
-                            </div>
-
-                            <Button
-                              className="w-full"
-                              onClick={
-                                modalType === "edit"
-                                  ? handleEditModel
-                                  : handleAddModel
-                              }
-                              disabled={
-                                !newModel.name ||
-                                !newModel.bodyTypeId ||
-                                !selectedBrand
-                              }
-                            >
-                              {modalType === "edit"
-                                ? "Update Model"
-                                : "Add Model"}
-                            </Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <select
-                    {...register("model", { required: true })}
-                    className="w-full p-3 border rounded-lg bg-white"
-                    disabled={!selectedBrand || isLoadingModels}
-                  >
-                    <option value="">
-                      {isLoadingModels ? "Loading models..." : "Choose a model"}
-                    </option>
-                    {!isLoadingModels &&
-                      filteredModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name} - {model.expand?.body_type?.name} •{" "}
-                          {model.seats} seats • {model.cc}cc
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Car Specifications */}
-            <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-              <h3 className="text-lg font-medium text-gray-700">
-                Car Specifications
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Year</Label>
-                  <Input
-                    type="number"
-                    {...register("year", { required: true })}
-                    className="bg-white"
-                    placeholder="e.g., 2023"
-                    defaultValue={selectedCar?.year || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Condition (%)</Label>
-                  <Input
-                    type="number"
-                    {...register("condition", {
-                      required: true,
-                      min: 0,
-                      max: 100,
-                    })}
-                    className="bg-white"
-                    placeholder="e.g., 90 (0-100)"
-                    defaultValue={selectedCar?.condition || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Transmission</Label>
-                  <select
-                    {...register("transmission", { required: true })}
-                    className="w-full p-3 border rounded-lg bg-white"
-                    defaultValue={selectedCar?.transmission || ""}
-                  >
-                    <option value="">Select type</option>
-                    {TRANSMISSION_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Mileage (km)</Label>
-                  <Input
-                    type="number"
-                    {...register("mileage", { required: true })}
-                    className="bg-white"
-                    placeholder="e.g., 5000"
-                    defaultValue={selectedCar?.mileage || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Buy Price</Label>
-                  <Input
-                    type="number"
-                    {...register("buy_price", { required: true })}
-                    className="bg-white"
-                    placeholder="Enter amount"
-                    defaultValue={selectedCar?.buy_price || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sell Price</Label>
-                  <Input
-                    type="number"
-                    {...register("sell_price", { required: true })}
-                    className="bg-white"
-                    placeholder="Enter amount"
-                    defaultValue={selectedCar?.sell_price || ""}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Details */}
-            <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-              <h3 className="text-lg font-medium text-gray-700">
-                Additional Details
-              </h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <textarea
-                    {...register("description", { required: true })}
-                    className="w-full p-3 border rounded-lg bg-white min-h-[100px]"
-                    placeholder="Enter detailed description of the car..."
-                    defaultValue={selectedCar?.description || ""}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Images</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                    <Input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="bg-gray-200 cursor-pointer"
-                    />
-                    <p className="text-sm text-gray-500 mt-2">
-                      Upload multiple images. Supported formats: JPG, PNG
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 mt-2">
-                    {existingImages.map((image, index) => (
-                      <div key={index} className="relative aspect-video">
-                        <Image
-                          src={
-                            selectedCar
-                              ? CarApi.getImageUrl(selectedCar, image)
-                              : ""
-                          }
-                          alt={`Car image ${index + 1}`}
-                          fill
-                          className="object-cover rounded-lg"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeExistingImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {imageFiles.map((file, index) => (
-                      <div key={index} className="relative aspect-video">
-                        <Image
-                          src={URL.createObjectURL(file)}
-                          alt={`New car image ${index + 1}`}
-                          fill
-                          className="object-cover rounded-lg"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          onLoad={(e) => {
-                            URL.revokeObjectURL(
-                              (e.target as HTMLImageElement).src
-                            );
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        <div className="p-6 border-t border-gray-200">
-          <div className="flex justify-end space-x-3">
+          <div className="max-h-[calc(90vh-10rem)] overflow-y-auto p-4">
+            {FormContent}
+          </div>
+          <div className="p-4 border-t flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button
               type="submit"
+              form="car-form"
               onClick={handleSubmit(onSubmitForm)}
               disabled={loading || (modalType === "edit" && !isFormChanged)}
             >
@@ -887,8 +894,37 @@ export function CarForm({
                 : "Update Car"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={open} onOpenChange={onClose}>
+      <DrawerContent className="max-h-[90vh] overflow-hidden">
+        <DrawerHeader className="border-b">
+          <DrawerTitle className="text-xl font-semibold">
+            {modalType === "create" ? "Add New Car" : "Edit Car"}
+          </DrawerTitle>
+          <DrawerDescription className="sr-only">
+            {modalType === "create" ? "Add a new car" : "Edit car details"}
+          </DrawerDescription>
+        </DrawerHeader>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">{FormContent}</div>
         </div>
-      </DialogContent>
-    </Dialog>
+        <DrawerFooter className="border-t p-4">
+          {FormActions}
+          <button
+            className="sr-only"
+            tabIndex={-1}
+            autoFocus
+            aria-hidden="true"
+          />
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
+
+export default CarForm;

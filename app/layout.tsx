@@ -1,8 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
-import NavbarLayout from "@/components/layout/navbar-layout";
-import FooterLayout from "@/components/layout/footer-layout";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,9 +11,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
-        <NavbarLayout />
-        <main className="flex-1">{children}</main>
-        <FooterLayout />
+        {children}
         <Toaster />
       </body>
     </html>
