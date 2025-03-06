@@ -72,7 +72,7 @@ export function CarDetail({ data }: CarDetailProps) {
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         {/* Left Column - Car Viewer */}
         <div className="lg:sticky lg:top-6 space-y-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
-          <Link href="/" className="inline-block">
+          <Link href="/" prefetch={false} className="inline-block">
             <Button variant="ghost" className="group">
               <ArrowUp
                 className="w-4 h-4 mr-2 rotate-[270deg] transition-transform group-hover:-translate-x-1"

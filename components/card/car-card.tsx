@@ -21,7 +21,11 @@ export function CarCard({ car }: CarCardProps) {
     : null;
 
   return (
-    <Link href={`/car/${car.id}`} aria-label={`View details for ${modelName}`}>
+    <Link
+      href={`/car/${car.id}`}
+      aria-label={`View details for ${modelName}`}
+      prefetch={false}
+    >
       <Card className="overflow-hidden group transition-all duration-300 hover:shadow-lg">
         <CardHeader className="p-0 space-y-0 relative">
           {bodyType && (
