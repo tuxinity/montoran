@@ -12,18 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import debounce from "lodash/debounce";
-import { pb } from "@/lib/pocketbase";
-
-interface Brand {
-  id: string;
-  name: string;
-}
-
-interface BodyType {
-  id: string;
-  name: string;
-  value: string;
-}
+import CarApi from "@/lib/car-api";
+import type { Brand, BodyType } from "@/types/car";
 
 export interface FilterValues {
   brand?: string;
@@ -38,27 +28,31 @@ interface CarFiltersProps {
   onFilterChange: (filters: FilterValues) => void;
 }
 
-const PRICE_RANGES = Object.freeze([
+const PRICE_RANGES = [
   { label: "< Rp 100 Juta", value: "100000000" },
   { label: "< Rp 200 Juta", value: "200000000" },
   { label: "< Rp 500 Juta", value: "500000000" },
   { label: "< Rp 1 Milyar", value: "1000000000" },
-]);
+] as const;
 
-const TRANSMISSION_OPTIONS = Object.freeze([
+const TRANSMISSION_OPTIONS = [
   { label: "Automatic", value: "AT" },
   { label: "Manual", value: "MT" },
-]);
+] as const;
 
-const TransmissionSelect = memo(
-  ({
-    value,
-    onChange,
-  }: {
-    value: string | undefined;
-    onChange: (value: string) => void;
-  }) => (
-    <Select value={value ?? "all"} onValueChange={onChange}>
+const TransmissionSelect = memo(function TransmissionSelect({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Select
+      value={value ?? "all"}
+      onValueChange={onChange}
+      aria-label="Transmission filter"
+    >
       <SelectTrigger>
         <SelectValue placeholder="Transmission" />
       </SelectTrigger>
@@ -71,19 +65,22 @@ const TransmissionSelect = memo(
         ))}
       </SelectContent>
     </Select>
-  )
-);
-TransmissionSelect.displayName = "TransmissionSelect";
+  );
+});
 
-const PriceSelect = memo(
-  ({
-    value,
-    onChange,
-  }: {
-    value: string | undefined;
-    onChange: (value: string) => void;
-  }) => (
-    <Select value={value ?? "all"} onValueChange={onChange}>
+const PriceSelect = memo(function PriceSelect({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Select
+      value={value ?? "all"}
+      onValueChange={onChange}
+      aria-label="Price range filter"
+    >
       <SelectTrigger>
         <SelectValue placeholder="Price Range" />
       </SelectTrigger>
@@ -96,9 +93,8 @@ const PriceSelect = memo(
         ))}
       </SelectContent>
     </Select>
-  )
-);
-PriceSelect.displayName = "PriceSelect";
+  );
+});
 
 export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,21 +105,15 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [brandsResponse, bodyTypesResponse] = await Promise.all([
-        pb.collection("brand").getFullList<Brand>({
-          $autoCancel: false,
-          $cancelKey: "brands",
-        }),
-        pb.collection("body_type").getFullList<BodyType>({
-          $autoCancel: false,
-          $cancelKey: "body-types",
-        }),
+      const [brandsData, bodyTypesData] = await Promise.all([
+        CarApi.getBrands(),
+        CarApi.getBodyTypes(),
       ]);
 
-      setBrands(new Map(brandsResponse.map((brand) => [brand.id, brand])));
-      setBodyTypes(new Map(bodyTypesResponse.map((type) => [type.id, type])));
+      setBrands(new Map(brandsData.map((brand) => [brand.id, brand])));
+      setBodyTypes(new Map(bodyTypesData.map((type) => [type.id, type])));
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      console.error("Failed to fetch filter data:", error);
     }
   }, []);
 
@@ -173,7 +163,6 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
   );
 
   const brandsArray = useMemo(() => Array.from(brands.values()), [brands]);
-
   const bodyTypesArray = useMemo(
     () => Array.from(bodyTypes.values()),
     [bodyTypes]
@@ -183,19 +172,24 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
     <div className="space-y-4">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
             placeholder="Search cars..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-9"
+            aria-label="Search cars"
           />
           {searchQuery && (
             <button
               onClick={() => handleSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -203,11 +197,18 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           variant={isFiltersVisible ? "secondary" : "outline"}
           size="icon"
           onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+          aria-label={isFiltersVisible ? "Hide filters" : "Show filters"}
+          aria-expanded={isFiltersVisible}
         >
-          <SlidersHorizontal className="h-4 w-4" />
+          <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
         </Button>
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={resetFilters}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetFilters}
+            aria-label="Reset all filters"
+          >
             Reset
           </Button>
         )}
@@ -218,6 +219,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           <Select
             value={filters.brand ?? "all"}
             onValueChange={(value) => handleFilterChange("brand", value)}
+            aria-label="Brand filter"
           >
             <SelectTrigger>
               <SelectValue placeholder="Brand" />
@@ -235,6 +237,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           <Select
             value={filters.bodyType ?? "all"}
             onValueChange={(value) => handleFilterChange("bodyType", value)}
+            aria-label="Body type filter"
           >
             <SelectTrigger>
               <SelectValue placeholder="Body Type" />
