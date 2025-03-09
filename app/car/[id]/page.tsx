@@ -26,6 +26,19 @@ export async function generateMetadata({
   const brand = car.expand?.model.expand?.brand.name;
   const model = car.expand?.model.name;
   const year = car.year;
+  const imageUrl = car.images?.[0]
+    ? CarApi.getImageUrl(car, car.images[0])
+    : null;
+
+  const ogUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/og`);
+  if (brand) ogUrl.searchParams.set("brand", brand);
+  if (model) ogUrl.searchParams.set("model", model);
+  if (year) ogUrl.searchParams.set("year", year.toString());
+  if (imageUrl) {
+    ogUrl.searchParams.set("image", imageUrl);
+  }
+
+  console.log("OG URL:", ogUrl.toString());
 
   return {
     title: `${year} ${brand} ${model} | Montoran`,
@@ -33,7 +46,20 @@ export async function generateMetadata({
     openGraph: {
       title: `${year} ${brand} ${model}`,
       description: `View details for ${year} ${brand} ${model}. Explore specifications, features, and pricing.`,
-      images: car.images?.[0] ? [CarApi.getImageUrl(car, car.images[0])] : [],
+      images: [
+        {
+          url: ogUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: `${year} ${brand} ${model}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${year} ${brand} ${model}`,
+      description: `View details for ${year} ${brand} ${model}. Explore specifications, features, and pricing.`,
+      images: [ogUrl.toString()],
     },
   };
 }
