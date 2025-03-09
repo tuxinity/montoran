@@ -311,6 +311,8 @@ export const CarApi: ICarAPI = {
     pb.authStore.clear();
     Cookies.remove("pb_auth");
   },
+
+  getPocketBase: () => pb,
 };
 
 // Helper function for creating car from FormData

@@ -1,4 +1,5 @@
 import { Car, Model, Brand, BodyType, FilterValues } from "@/types/car";
+import type PocketBase from "pocketbase";
 
 // GET operations interfaces
 export interface GetCarsOptions {
@@ -143,6 +144,7 @@ export interface ICarAPI {
     };
   }>;
   logout: () => void;
+  getPocketBase: () => PocketBase;
 }
 
 export interface IAuthAPI {

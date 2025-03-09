@@ -2,6 +2,8 @@ import { CarList } from "@/components/car-list";
 import CarApi from "@/lib/car-api";
 import { Suspense } from "react";
 
+export const revalidate = 10;
+
 export default async function Home() {
   const initialCars = await CarApi.getCars({});
 

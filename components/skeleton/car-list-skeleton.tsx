@@ -1,19 +1,37 @@
-export function CarListSkeleton() {
+interface CarListSkeletonProps {
+  count?: number;
+}
+
+export function CarListSkeleton({ count = 4 }: CarListSkeletonProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <>
+      {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
         <div
           key={i}
-          className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse"
+          className="overflow-hidden rounded-lg border bg-white transition-all duration-300 hover:shadow-lg"
         >
-          <div className="aspect-[4/3] bg-muted rounded-t-lg" />
+          {/* Image placeholder */}
+          <div className="aspect-[4/3] bg-gray-100 animate-pulse" />
+
+          {/* Content */}
           <div className="p-4 space-y-3">
-            <div className="h-4 w-3/4 bg-muted rounded" />
-            <div className="h-4 w-1/2 bg-muted rounded" />
-            <div className="h-4 w-2/3 bg-muted rounded" />
+            {/* Title and subtitle */}
+            <div className="space-y-2">
+              <div className="h-5 bg-gray-100 rounded-md animate-pulse w-3/4" />
+              <div className="h-4 bg-gray-100 rounded-md animate-pulse w-1/2" />
+            </div>
+
+            {/* Specs */}
+            <div className="flex gap-3">
+              <div className="h-6 bg-gray-100 rounded-md animate-pulse w-20" />
+              <div className="h-6 bg-gray-100 rounded-md animate-pulse w-20" />
+            </div>
+
+            {/* Price */}
+            <div className="h-7 bg-gray-100 rounded-md animate-pulse w-32" />
           </div>
         </div>
       ))}
-    </div>
+    </>
   );
 }

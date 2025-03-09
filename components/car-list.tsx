@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import CarApi from "@/lib/car-api";
 import { CarCard } from "./card";
 import type { Car } from "@/types/car";
@@ -13,72 +13,73 @@ interface CarListProps {
   initialCars: Car[];
 }
 
-export function CarList({ className = "", initialCars }: CarListProps) {
+export function CarList({ initialCars, className }: CarListProps) {
   const [cars, setCars] = useState<Car[]>(initialCars);
-  const [loading, setLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [filters, setFilters] = useState<FilterValues>({});
+  const [search, setSearch] = useState<string>("");
 
-  const fetchCars = async (query?: string, filters?: FilterValues) => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    setLoading(true);
-    try {
-      const results = await CarApi.getCars({ search: query, filters });
-      setCars(results);
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return;
+  const loadCars = useCallback(
+    async (searchValue: string, filterValues: FilterValues) => {
+      setIsLoading(true);
+      try {
+        const updatedCars = await CarApi.getCars({
+          search: searchValue.trim(),
+          filters: filterValues,
+        });
+        setCars(updatedCars);
+      } catch (error) {
+        console.error("Error loading cars:", error);
+      } finally {
+        setIsLoading(false);
       }
-      console.error("Error fetching cars:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    []
+  );
 
-  const handleSearch = async (query: string) => {
-    fetchCars(query);
-  };
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearch(value);
+      loadCars(value, filters);
+    },
+    [filters, loadCars]
+  );
 
-  const handleFilterChange = async (filters: FilterValues) => {
-    fetchCars("", filters);
-  };
+  const handleFilterChange = useCallback(
+    (newFilters: FilterValues) => {
+      setFilters(newFilters);
+      loadCars(search, newFilters);
+    },
+    [search, loadCars]
+  );
 
-  // Cleanup on unmount
   useEffect(() => {
+    const pb = CarApi.getPocketBase();
+    let unsubscribe: (() => void) | undefined;
+
+    pb?.collection("cars")
+      .subscribe("*", async () => {
+        loadCars(search, filters);
+      })
+      .then((sub) => {
+        unsubscribe = sub;
+      });
+
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      unsubscribe?.();
     };
-  }, []);
+  }, [search, filters, loadCars]);
 
   return (
-    <div className="space-y-6">
+    <div className={className}>
       <CarFilters onSearch={handleSearch} onFilterChange={handleFilterChange} />
-
-      {loading ? (
-        <CarListSkeleton />
-      ) : cars.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No cars found</p>
-          <p className="text-sm text-muted-foreground">
-            Try adjusting your search or filters
-          </p>
-        </div>
-      ) : (
-        <div
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}
-        >
-          {cars.map((car) => (
-            <CarCard key={car.id} car={car} />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+        {isLoading ? (
+          <CarListSkeleton />
+        ) : (
+          cars.map((car) => <CarCard key={car.id} car={car} />)
+        )}
+      </div>
     </div>
   );
 }
