@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import CarApi from "@/lib/car-api";
 import { CarDetail } from "@/components/car-detail";
 import { CarDetailSkeleton } from "@/components/skeleton/car-detail-skeleton";
+import { getOgImageUrl } from "@/lib/og";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -18,48 +19,43 @@ export async function generateMetadata({
 
   if (!car) {
     return {
-      title: "Car Not Found | Montoran",
-      description: "The requested car details could not be found.",
+      title: "Car Not Found",
     };
   }
 
-  const brand = car.expand?.model.expand?.brand.name;
-  const model = car.expand?.model.name;
-  const year = car.year;
-  const imageUrl = car.images?.[0]
-    ? CarApi.getImageUrl(car, car.images[0])
-    : null;
+  const title = `${car.expand?.model.expand?.brand.name} ${car.expand?.model.name}`;
+  const description =
+    car.description ||
+    `${car.year} ${car.expand?.model.expand?.brand.name} ${car.expand?.model.name} - Find your perfect car on Montoran`;
+  const ogImage = CarApi.getImageUrl(car, car.images[0]);
 
-  const ogUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/og`);
-  if (brand) ogUrl.searchParams.set("brand", brand);
-  if (model) ogUrl.searchParams.set("model", model);
-  if (year) ogUrl.searchParams.set("year", year.toString());
-  if (imageUrl) {
-    ogUrl.searchParams.set("image", imageUrl);
-  }
-
-  console.log("OG URL:", ogUrl.toString());
+  const ogImageUrl = getOgImageUrl({
+    title,
+    description,
+    image: ogImage,
+  });
 
   return {
-    title: `${year} ${brand} ${model} | Montoran`,
-    description: `View details for ${year} ${brand} ${model}. Explore specifications, features, and pricing.`,
+    title,
+    description,
     openGraph: {
-      title: `${year} ${brand} ${model}`,
-      description: `View details for ${year} ${brand} ${model}. Explore specifications, features, and pricing.`,
+      title,
+      description,
       images: [
         {
-          url: ogUrl.toString(),
+          url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${year} ${brand} ${model}`,
+          alt: title,
         },
       ],
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${year} ${brand} ${model}`,
-      description: `View details for ${year} ${brand} ${model}. Explore specifications, features, and pricing.`,
-      images: [ogUrl.toString()],
+      title,
+      description,
+      images: [ogImageUrl],
     },
   };
 }
@@ -71,6 +67,27 @@ export default async function CarDetailPage({ params }: PageProps) {
   if (!car) {
     notFound();
   }
+
+  // Generate OG image URL for console logging
+  // const title = `${car.expand?.model.expand?.brand.name} ${car.expand?.model.name}`;
+  // const description =
+  //   car.description ||
+  //   `${car.year} ${car.expand?.model.expand?.brand.name} ${car.expand?.model.name}`;
+  // const imageUrl =
+  //   car.images && car.images.length > 0
+  //     ? `${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/files/cars/${car.id}/${car.images[0]}`
+  //     : undefined;
+  // const ogImageUrl = getOgImageUrl({
+  //   title,
+  //   description,
+  //   image: imageUrl,
+  // });
+
+  // Log OG image details to console
+  // console.log("Car Detail Page - OG Image URL:", ogImageUrl);
+  // console.log("Car Title:", title);
+  // console.log("Car Description:", description);
+  // console.log("Car Image URL:", imageUrl);
 
   return (
     <main className="min-h-screen bg-gray-50">
