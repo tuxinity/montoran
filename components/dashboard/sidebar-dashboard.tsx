@@ -3,12 +3,14 @@
 import { Button } from "@/components/ui/button";
 import AuthApi from "@/lib/auth-api";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FaCar, FaSignOutAlt } from "react-icons/fa";
+import { usePathname, useRouter } from "next/navigation";
+import { FaCar, FaSignOutAlt, FaUsers, FaChartBar } from "react-icons/fa";
 import { BsStack } from "react-icons/bs";
+import { HiShoppingCart } from "react-icons/hi";
 
 export const SidebarDashboard = () => {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     AuthApi.logout();
@@ -29,10 +31,50 @@ export const SidebarDashboard = () => {
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         <Link
           href="/dashboard"
-          className="flex items-center px-3 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg ${
+            pathname === "/dashboard"
+              ? "text-blue-600 bg-blue-50"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
         >
           <FaCar className="w-5 h-5 mr-3" />
           Cars
+        </Link>
+
+        <Link
+          href="/dashboard/sales"
+          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg ${
+            pathname === "/dashboard/sales"
+              ? "text-blue-600 bg-blue-50"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          <HiShoppingCart className="w-5 h-5 mr-3" />
+          Sales
+        </Link>
+
+        <Link
+          href="/dashboard/customers"
+          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg ${
+            pathname === "/dashboard/customers"
+              ? "text-blue-600 bg-blue-50"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          <FaUsers className="w-5 h-5 mr-3" />
+          Customers
+        </Link>
+
+        <Link
+          href="/dashboard/reports"
+          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg ${
+            pathname === "/dashboard/reports"
+              ? "text-blue-600 bg-blue-50"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          <FaChartBar className="w-5 h-5 mr-3" />
+          Reports
         </Link>
       </nav>
 
