@@ -68,27 +68,6 @@ export default async function CarDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Generate OG image URL for console logging
-  // const title = `${car.expand?.model.expand?.brand.name} ${car.expand?.model.name}`;
-  // const description =
-  //   car.description ||
-  //   `${car.year} ${car.expand?.model.expand?.brand.name} ${car.expand?.model.name}`;
-  // const imageUrl =
-  //   car.images && car.images.length > 0
-  //     ? `${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/files/cars/${car.id}/${car.images[0]}`
-  //     : undefined;
-  // const ogImageUrl = getOgImageUrl({
-  //   title,
-  //   description,
-  //   image: imageUrl,
-  // });
-
-  // Log OG image details to console
-  // console.log("Car Detail Page - OG Image URL:", ogImageUrl);
-  // console.log("Car Title:", title);
-  // console.log("Car Description:", description);
-  // console.log("Car Image URL:", imageUrl);
-
   return (
     <main className="min-h-screen bg-gray-50">
       <Suspense fallback={<CarDetailSkeleton />}>

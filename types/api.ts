@@ -159,5 +159,18 @@ export interface IAuthAPI {
       email: string;
     };
   }>;
+  loginWithGoogle: () => Promise<string>;
+  completeOAuthLogin: (
+    provider: string,
+    code: string,
+    state: string,
+    redirectUrl: string
+  ) => Promise<{
+    token: string;
+    user: {
+      id: string;
+      email: string;
+    };
+  }>;
   logout: () => void;
 }

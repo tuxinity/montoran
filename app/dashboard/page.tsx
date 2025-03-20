@@ -17,6 +17,9 @@ import { CarFilters, type FilterValues } from "@/components/car-filters";
 import debounce from "lodash/debounce";
 import { idrFormat } from "@/utils/idr-format";
 import { CarForm } from "@/components/car-form";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ModalType = "create" | "edit" | "delete" | null;
 
@@ -30,6 +33,7 @@ const DashboardPage = () => {
   const [search, setSearch] = useState<string>("");
   const [bodyTypes, setBodyTypes] = useState<BodyType[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [pageLoaded, setPageLoaded] = useState(false);
 
   const loadCars = useCallback(async () => {
     setLoading(true);
@@ -45,6 +49,7 @@ const DashboardPage = () => {
       });
     } finally {
       setLoading(false);
+      setPageLoaded(true);
     }
   }, [search, filters, toast]);
 
@@ -160,7 +165,6 @@ const DashboardPage = () => {
   }, []);
 
   const renderCarForm = () => {
-    // Only render if modalType is create or edit
     if (modalType === "create") {
       return (
         <CarForm
@@ -194,132 +198,194 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="w-full mx-auto">
+    <div className="container mx-auto px-4 py-6">
       {/* Actions */}
-      <div className="mb-6 flex flex-col md:flex-row items-center justify-between">
-        <div className="flex flex-col md:flex-row px-6 py-4 border-t border-gray-100 gap-2">
-          <CarFilters
-            onSearch={handleSearch}
-            onFilterChange={handleFilterChange}
-          />
-          <Button
-            onClick={() => openModal("create")}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+            <div className="w-full">
+              <CarFilters
+                onSearch={handleSearch}
+                onFilterChange={handleFilterChange}
               />
-            </svg>
-            Add New Car
-          </Button>
-        </div>
-      </div>
+            </div>
+            <Button
+              onClick={() => openModal("create")}
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
+              size="lg"
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Add New Car
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Table Container */}
-      <div className="w-full overflow-x-auto">
-        <div className="min-w-full align-middle">
-          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-gray-500">Loading cars...</p>
-                </div>
+      <Card>
+        <CardContent className="p-0">
+          {loading && !pageLoaded ? (
+            <div className="p-8">
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-12 w-1/5" />
+                    <Skeleton className="h-12 w-1/5" />
+                    <Skeleton className="h-12 w-1/5" />
+                    <Skeleton className="h-12 w-1/5" />
+                    <Skeleton className="h-12 w-1/5" />
+                  </div>
+                ))}
               </div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200 table-fixed">
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr className="bg-gray-50">
                     <th
                       scope="col"
-                      className="w-1/5 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Brand
                     </th>
                     <th
                       scope="col"
-                      className="w-1/5 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Model
                     </th>
                     <th
                       scope="col"
-                      className="w-1/5 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Price
                     </th>
                     <th
                       scope="col"
-                      className="w-1/5 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Transmission
                     </th>
                     <th
                       scope="col"
-                      className="w-1/5 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {cars.map((car) => (
-                    <tr key={car.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {car.expand?.model?.expand?.brand?.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {car.expand?.model?.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {idrFormat(car.sell_price)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                          {car.transmission}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openModal("edit", car)}
+                  {cars.length === 0 && !loading ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <svg
+                            className="w-16 h-16 text-gray-300 mb-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
-                            Edit
-                          </Button>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1}
+                              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">
+                            No cars found
+                          </h3>
+                          <p className="text-gray-500 mb-4">
+                            Try adjusting your search or filters
+                          </p>
                           <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => openModal("delete", car)}
+                            onClick={() => openModal("create")}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
                           >
-                            Delete
+                            Add Your First Car
                           </Button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    cars.map((car) => (
+                      <tr
+                        key={car.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {car.expand?.model?.expand?.brand?.name || "—"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {car.expand?.model?.name || "—"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                          {idrFormat(car.sell_price)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            variant="outline"
+                            className="capitalize bg-blue-50 text-blue-700 border-blue-200"
+                          >
+                            {car.transmission}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openModal("edit", car)}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => openModal("delete", car)}
+                              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-            )}
-          </div>
-        </div>
-      </div>
+              {loading && pageLoaded && (
+                <div className="flex justify-center py-4 bg-gray-50 bg-opacity-50">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-500">Loading...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {renderCarForm()}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={modalType === "delete"} onOpenChange={() => closeModal()}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Car</DialogTitle>
             <DialogDescription>
@@ -327,7 +393,36 @@ const DashboardPage = () => {
               undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <div className="mt-4 p-4 bg-red-50 rounded-md border border-red-100">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {selectedCar?.expand?.model?.expand?.brand?.name}{" "}
+                  {selectedCar?.expand?.model?.name}
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>
+                    This will permanently remove this car from your inventory.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex space-x-2 justify-end">
             <Button variant="outline" onClick={closeModal}>
               Cancel
             </Button>
@@ -335,8 +430,35 @@ const DashboardPage = () => {
               variant="destructive"
               onClick={handleDelete}
               disabled={loading}
+              className="bg-red-600 hover:bg-red-700"
             >
-              {loading ? "Deleting..." : "Delete Car"}
+              {loading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Deleting...
+                </>
+              ) : (
+                "Delete Car"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthApi from "@/lib/auth-api";
 import { FaGoogle } from "react-icons/fa";
 import Image from "next/image";
+import { pb } from "@/lib/pocketbase";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -12,6 +13,13 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Cek status autentikasi saat komponen dimuat
+  useEffect(() => {
+    if (pb.authStore.isValid) {
+      router.push("/dashboard");
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,8 +38,26 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = async () => {
-    // TODO: Implement Google login
-    alert("Google login coming soon!");
+    setIsLoading(true);
+
+    try {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/auth-callback`;
+      const scope = "email profile";
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+        redirectUri
+      )}&response_type=code&scope=${encodeURIComponent(
+        scope
+      )}&access_type=offline`;
+
+      // Redirect ke halaman login Google
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Google login error:", error);
+      setError("Failed to login with Google");
+      setIsLoading(false);
+    }
   };
 
   return (

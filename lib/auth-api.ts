@@ -32,6 +32,71 @@ const AuthApi: IAuthAPI = {
     }
   },
 
+  loginWithGoogle: async (): Promise<string> => {
+    try {
+      const redirectUrl = `${window.location.origin}/auth-callback`;
+      const authMethods = await pb.collection("users").listAuthMethods();
+
+      interface AuthProvider {
+        name: string;
+        authUrl: string;
+        [key: string]: string | number | boolean | object;
+      }
+
+      interface AuthData {
+        providers?: AuthProvider[];
+      }
+
+      const authData = authMethods as unknown as AuthData;
+      const providers = authData.providers || [];
+
+      const googleAuthProvider = providers.find(
+        (provider) => provider.name === "google"
+      );
+
+      if (!googleAuthProvider) {
+        throw new Error("Google authentication is not configured");
+      }
+
+      return (
+        googleAuthProvider.authUrl +
+        `&redirectUrl=${encodeURIComponent(redirectUrl)}`
+      );
+    } catch (error) {
+      console.error("Google login preparation failed:", error);
+      throw error;
+    }
+  },
+
+  completeOAuthLogin: async (
+    provider: string,
+    code: string,
+    state: string,
+    redirectUrl: string
+  ) => {
+    try {
+      const authData = await pb
+        .collection("users")
+        .authWithOAuth2Code(provider, code, state, redirectUrl);
+
+      Cookies.set("pb_auth", pb.authStore.token, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
+
+      return {
+        token: authData.token,
+        user: {
+          id: authData.record.id,
+          email: authData.record.email,
+        },
+      };
+    } catch (error) {
+      console.error("OAuth login failed:", error);
+      throw error;
+    }
+  },
+
   logout: () => {
     pb.authStore.clear();
     Cookies.remove("pb_auth");
