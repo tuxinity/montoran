@@ -27,7 +27,6 @@ export const SidebarDashboard = () => {
         </h1>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         <Link
           href="/dashboard"
@@ -52,33 +51,8 @@ export const SidebarDashboard = () => {
           <HiShoppingCart className="w-5 h-5 mr-3" />
           Sales
         </Link>
-
-        <Link
-          href="/dashboard/customers"
-          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg ${
-            pathname === "/dashboard/customers"
-              ? "text-blue-600 bg-blue-50"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          <FaUsers className="w-5 h-5 mr-3" />
-          Customers
-        </Link>
-
-        <Link
-          href="/dashboard/reports"
-          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg ${
-            pathname === "/dashboard/reports"
-              ? "text-blue-600 bg-blue-50"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          <FaChartBar className="w-5 h-5 mr-3" />
-          Reports
-        </Link>
       </nav>
 
-      {/* Bottom section */}
       <div className="p-4 border-t border-gray-200">
         <Button
           onClick={handleLogout}
