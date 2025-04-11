@@ -1,4 +1,3 @@
-// Base PocketBase record interface
 export interface PocketBaseRecord {
   id: string;
   collectionId: string;
@@ -7,13 +6,11 @@ export interface PocketBaseRecord {
   updated: string;
 }
 
-// BodyType collection
 export interface BodyType
   extends Omit<PocketBaseRecord, "created" | "updated"> {
   name: string;
 }
 
-// Brand collection
 export interface Brand
   extends Omit<
     PocketBaseRecord,
@@ -22,7 +19,6 @@ export interface Brand
   name: string;
 }
 
-// Model collection
 export interface Model extends Omit<PocketBaseRecord, "created" | "updated"> {
   name: string;
   brand: string;
@@ -36,7 +32,6 @@ export interface Model extends Omit<PocketBaseRecord, "created" | "updated"> {
   };
 }
 
-// Car collection
 export interface Car extends PocketBaseRecord {
   model: string;
   body_type?: string;
@@ -58,7 +53,6 @@ export interface Car extends PocketBaseRecord {
   };
 }
 
-// User collection
 export interface User extends PocketBaseRecord {
   email: string;
   emailVisibility: boolean;
@@ -67,7 +61,6 @@ export interface User extends PocketBaseRecord {
   name?: string;
 }
 
-// Authentication response
 export interface AuthResponse {
   token: string;
   user: User;
@@ -115,10 +108,8 @@ export interface CarFormData {
   images?: File[] | FormDataEntryValue[];
 }
 
-// Type for fully expanded models
 export type ModelWithExpand = Model & Required<Pick<Model, "expand">>;
 
-// Types for handling cars with expanded records
 export type CarWithExpand = Car & Required<Pick<Car, "expand">>;
 export type CarWithFullExpand = Car & {
   expand: {
@@ -131,7 +122,6 @@ export type CarWithFullExpand = Car & {
   };
 };
 
-// PocketBase query parameters
 export interface PocketBaseQueryParams {
   filter?: string;
   sort?: string;
