@@ -56,7 +56,7 @@ export function CarDetail({ data }: CarDetailProps) {
 
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent(
-      `Halo, saya tertarik dengan ${data.expand?.model.name} tahun ${data.year}`
+      `Halo, saya tertarik dengan ${data.expand?.model.name} tahun ${data.year}`,
     );
     const whatsappUrl = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${message}`;
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
@@ -72,7 +72,7 @@ export function CarDetail({ data }: CarDetailProps) {
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         {/* Left Column - Car Viewer */}
         <div className="lg:sticky lg:top-6 space-y-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
-          <Link href="/" prefetch={false} className="inline-block">
+          <Link href="/car" prefetch={false} className="inline-block">
             <Button variant="ghost" className="group">
               <ArrowUp
                 className="w-4 h-4 mr-2 rotate-[270deg] transition-transform group-hover:-translate-x-1"
@@ -81,6 +81,12 @@ export function CarDetail({ data }: CarDetailProps) {
               Back to Listings
             </Button>
           </Link>
+
+          {data.is_sold && (
+            <div className="bg-red-500 text-white text-center py-2 rounded-md mb-4">
+              <span className="font-bold">THIS CAR HAS BEEN SOLD</span>
+            </div>
+          )}
 
           <ImageGallery
             images={images}
@@ -159,6 +165,7 @@ export function CarDetail({ data }: CarDetailProps) {
               className="w-full group"
               size="lg"
               onClick={handleWhatsAppClick}
+              disabled={data.is_sold}
             >
               WhatsApp
               <svg

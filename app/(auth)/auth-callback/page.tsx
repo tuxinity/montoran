@@ -70,23 +70,21 @@ function AuthCallbackContent() {
             setError("Account not registered");
             setErrorDetails(
               data.details ||
-                "This email is not registered in our system. Please contact administrator."
+                "This email is not registered in our system. Please contact administrator.",
             );
           } else {
             setError("Authentication failed");
             setErrorDetails(
-              data.message || "An error occurred during authentication."
+              data.message || "An error occurred during authentication.",
             );
           }
           setIsLoading(false);
           return;
         }
 
-        // Success - store token and redirect
         console.log("Authentication successful, storing token");
         Cookies.set("pb_auth", data.token, { expires: 7 });
 
-        // Redirect to dashboard
         console.log("Redirecting to dashboard");
         router.push("/dashboard");
       } catch (error) {
@@ -103,7 +101,7 @@ function AuthCallbackContent() {
       clearTimeout(timeoutId);
       clearInterval(textInterval);
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, isLoading]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
@@ -160,7 +158,6 @@ function AuthCallbackContent() {
   );
 }
 
-// Halaman utama dengan Suspense boundary
 export default function AuthCallbackPage() {
   return (
     <Suspense

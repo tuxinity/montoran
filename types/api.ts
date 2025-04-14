@@ -1,7 +1,6 @@
 import { Car, Model, Brand, BodyType, FilterValues } from "@/types/car";
 import type PocketBase from "pocketbase";
 
-// GET operations interfaces
 export interface GetCarsOptions {
   search?: string;
   filters?: FilterValues;
@@ -26,7 +25,6 @@ export interface GetBodyTypesOptions {
   filter?: string;
 }
 
-// CREATE operations interfaces
 export interface CreateCarRequest {
   model: string;
   body_type?: string;
@@ -57,7 +55,6 @@ export interface CreateBodyTypeRequest {
   name: string;
 }
 
-// UPDATE operations interfaces
 export interface UpdateCarRequest extends Partial<CreateCarRequest> {
   id: string;
 }
@@ -74,7 +71,6 @@ export interface UpdateBodyTypeRequest extends Partial<CreateBodyTypeRequest> {
   id: string;
 }
 
-// DELETE operations interfaces
 export interface DeleteCarOptions {
   id: string;
 }
@@ -91,51 +87,45 @@ export interface DeleteBodyTypeOptions {
   id: string;
 }
 
-// API function signatures
 export interface ICarAPI {
-  // GET functions
   getCars: (options?: GetCarsOptions) => Promise<Car[]>;
   getCarById: (options: GetCarByIdOptions) => Promise<Car>;
   getModels: (options?: GetModelsOptions) => Promise<Model[]>;
   getBrands: (options?: GetBrandsOptions) => Promise<Brand[]>;
   getBodyTypes: (options?: GetBodyTypesOptions) => Promise<BodyType[]>;
 
-  // CREATE functions
   createCar: (data: FormData | CreateCarRequest) => Promise<Car>;
   createModel: (data: CreateModelRequest) => Promise<Model>;
   createBrand: (data: CreateBrandRequest) => Promise<Brand>;
   createBodyType: (data: CreateBodyTypeRequest) => Promise<BodyType>;
 
-  // UPDATE functions
   updateCar: (
     id: string,
-    data: FormData | Partial<CreateCarRequest>
+    data: FormData | Partial<CreateCarRequest>,
   ) => Promise<Car>;
   updateModel: (
     id: string,
-    data: Partial<CreateModelRequest>
+    data: Partial<CreateModelRequest>,
   ) => Promise<Model>;
   updateBrand: (
     id: string,
-    data: Partial<CreateBrandRequest>
+    data: Partial<CreateBrandRequest>,
   ) => Promise<Brand>;
   updateBodyType: (
     id: string,
-    data: Partial<CreateBodyTypeRequest>
+    data: Partial<CreateBodyTypeRequest>,
   ) => Promise<BodyType>;
 
-  // DELETE functions
   deleteCar: (id: string) => Promise<boolean>;
   deleteModel: (id: string) => Promise<boolean>;
   deleteBrand: (id: string) => Promise<boolean>;
   deleteBodyType: (id: string) => Promise<boolean>;
 
-  // UTILITY functions
   getImageUrl: (record: Car, filename: string) => string;
   isLoggedIn: () => boolean;
   login: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<{
     token: string;
     user: {
@@ -151,7 +141,7 @@ export interface IAuthAPI {
   isLoggedIn: () => boolean;
   login: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<{
     token: string;
     user: {
@@ -164,7 +154,7 @@ export interface IAuthAPI {
     provider: string,
     code: string,
     state: string,
-    redirectUrl: string
+    redirectUrl: string,
   ) => Promise<{
     token: string;
     user: {

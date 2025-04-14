@@ -14,14 +14,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import debounce from "lodash/debounce";
 import CarApi from "@/lib/car-api";
 import type { Brand, BodyType } from "@/types/car";
-
-export interface FilterValues {
-  brand?: string;
-  bodyType?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  transmission?: string;
-}
+import { FilterValues } from "@/types/car";
 
 interface CarFiltersProps {
   onSearch: (value: string) => void;
@@ -123,7 +116,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
 
   const debouncedSearch = useMemo(
     () => debounce((value: string) => onSearch(value), 300),
-    [onSearch]
+    [onSearch],
   );
 
   useEffect(() => {
@@ -135,7 +128,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
       setSearchQuery(value);
       debouncedSearch(value);
     },
-    [debouncedSearch]
+    [debouncedSearch],
   );
 
   const handleFilterChange = useCallback(
@@ -147,7 +140,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
       setFilters(newFilters);
       onFilterChange(newFilters);
     },
-    [filters, onFilterChange]
+    [filters, onFilterChange],
   );
 
   const resetFilters = useCallback(() => {
@@ -159,13 +152,13 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
 
   const hasActiveFilters = useMemo(
     () => searchQuery || Object.values(filters).some(Boolean),
-    [searchQuery, filters]
+    [searchQuery, filters],
   );
 
   const brandsArray = useMemo(() => Array.from(brands.values()), [brands]);
   const bodyTypesArray = useMemo(
     () => Array.from(bodyTypes.values()),
-    [bodyTypes]
+    [bodyTypes],
   );
 
   return (
@@ -249,6 +242,21 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
                   {type.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.soldStatus ?? "all"}
+            onValueChange={(value) => handleFilterChange("soldStatus", value)}
+            aria-label="Sold status filter"
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="available">Available</SelectItem>
+              <SelectItem value="sold">Sold Out</SelectItem>
             </SelectContent>
           </Select>
 

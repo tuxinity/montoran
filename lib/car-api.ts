@@ -42,6 +42,12 @@ export const CarApi: ICarAPI = {
         filterRules.push(`sell_price <= ${filters.maxPrice}`);
       }
 
+      if (filters?.soldStatus === "available") {
+        filterRules.push(`is_sold = false`);
+      } else if (filters?.soldStatus === "sold") {
+        filterRules.push(`is_sold = true`);
+      }
+
       const records = await pb.collection("cars").getFullList<Car>({
         sort: "-created",
         expand: "model.brand,model.body_type",
@@ -57,7 +63,6 @@ export const CarApi: ICarAPI = {
       throw error;
     }
   },
-
   getCarById: async ({ id }: GetCarByIdOptions): Promise<Car> => {
     try {
       const record = await pb.collection("cars").getOne<Car>(id, {
@@ -118,13 +123,11 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // CREATE functions
   createCar: async (data: FormData | CreateCarRequest): Promise<Car> => {
     try {
       if (data instanceof FormData) {
         return await createCarFromFormData(data);
       } else {
-        // Convert object to FormData for consistent handling
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
           if (key === "images" && Array.isArray(value)) {
@@ -168,16 +171,14 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // UPDATE functions
   updateCar: async (
     id: string,
-    data: FormData | Partial<CreateCarRequest>
+    data: FormData | Partial<CreateCarRequest>,
   ): Promise<Car> => {
     try {
       if (data instanceof FormData) {
         return await updateCarFromFormData(id, data);
       } else {
-        // Convert object to FormData for consistent handling
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
           if (key === "images" && Array.isArray(value)) {
@@ -196,7 +197,7 @@ export const CarApi: ICarAPI = {
 
   updateModel: async (
     id: string,
-    data: Partial<CreateModelRequest>
+    data: Partial<CreateModelRequest>,
   ): Promise<Model> => {
     try {
       return await pb.collection(COLLECTIONS.MODELS).update<Model>(id, data);
@@ -208,7 +209,7 @@ export const CarApi: ICarAPI = {
 
   updateBrand: async (
     id: string,
-    data: Partial<CreateBrandRequest>
+    data: Partial<CreateBrandRequest>,
   ): Promise<Brand> => {
     try {
       return await pb.collection(COLLECTIONS.BRANDS).update<Brand>(id, data);
@@ -220,7 +221,7 @@ export const CarApi: ICarAPI = {
 
   updateBodyType: async (
     id: string,
-    data: Partial<CreateBodyTypeRequest>
+    data: Partial<CreateBodyTypeRequest>,
   ): Promise<BodyType> => {
     try {
       return await pb
@@ -232,7 +233,6 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // DELETE functions
   deleteCar: async (id: string): Promise<boolean> => {
     try {
       await pb.collection(COLLECTIONS.CARS).delete(id);
@@ -273,7 +273,6 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // UTILITY functions
   getImageUrl: (record: Car, filename: string): string => {
     return pb.files.getURL(record, filename);
   },
@@ -284,7 +283,7 @@ export const CarApi: ICarAPI = {
 
   login: async (
     email: string,
-    password: string
+    password: string,
   ): Promise<{ token: string; user: { id: string; email: string } }> => {
     try {
       const authData = await pb
@@ -315,7 +314,6 @@ export const CarApi: ICarAPI = {
   getPocketBase: () => pb,
 };
 
-// Helper function for creating car from FormData
 async function createCarFromFormData(formData: FormData): Promise<Car> {
   try {
     let brand = await pb
@@ -380,10 +378,9 @@ async function createCarFromFormData(formData: FormData): Promise<Car> {
   }
 }
 
-// Helper function for updating car from FormData
 async function updateCarFromFormData(
   id: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<Car> {
   try {
     let brand = await pb

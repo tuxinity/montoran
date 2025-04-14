@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import CarApi from "@/lib/car-api";
 import { CarDetail } from "@/components/car-detail";
 import { CarDetailSkeleton } from "@/components/skeleton/car-detail-skeleton";
+import { RelevantCars } from "@/components/car/relevant-cars";
 import { getOgImageUrl } from "@/lib/og";
 
 interface PageProps {
@@ -72,6 +73,7 @@ export default async function CarDetailPage({ params }: PageProps) {
     <main className="min-h-screen bg-gray-50">
       <Suspense fallback={<CarDetailSkeleton />}>
         <CarDetail data={car} />
+        <RelevantCars currentCar={car} />
       </Suspense>
     </main>
   );
