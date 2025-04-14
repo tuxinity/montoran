@@ -82,11 +82,9 @@ function AuthCallbackContent() {
           return;
         }
 
-        // Success - store token and redirect
         console.log("Authentication successful, storing token");
         Cookies.set("pb_auth", data.token, { expires: 7 });
 
-        // Redirect to dashboard
         console.log("Redirecting to dashboard");
         router.push("/dashboard");
       } catch (error) {
@@ -160,7 +158,6 @@ function AuthCallbackContent() {
   );
 }
 
-// Halaman utama dengan Suspense boundary
 export default function AuthCallbackPage() {
   return (
     <Suspense

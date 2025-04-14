@@ -42,7 +42,6 @@ export const CarApi: ICarAPI = {
         filterRules.push(`sell_price <= ${filters.maxPrice}`);
       }
 
-      // Tambahkan filter berdasarkan status jual
       if (filters?.soldStatus === "available") {
         filterRules.push(`is_sold = false`);
       } else if (filters?.soldStatus === "sold") {
@@ -124,13 +123,11 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // CREATE functions
   createCar: async (data: FormData | CreateCarRequest): Promise<Car> => {
     try {
       if (data instanceof FormData) {
         return await createCarFromFormData(data);
       } else {
-        // Convert object to FormData for consistent handling
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
           if (key === "images" && Array.isArray(value)) {
@@ -174,7 +171,6 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // UPDATE functions
   updateCar: async (
     id: string,
     data: FormData | Partial<CreateCarRequest>,
@@ -183,7 +179,6 @@ export const CarApi: ICarAPI = {
       if (data instanceof FormData) {
         return await updateCarFromFormData(id, data);
       } else {
-        // Convert object to FormData for consistent handling
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
           if (key === "images" && Array.isArray(value)) {
@@ -238,7 +233,6 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // DELETE functions
   deleteCar: async (id: string): Promise<boolean> => {
     try {
       await pb.collection(COLLECTIONS.CARS).delete(id);
@@ -279,7 +273,6 @@ export const CarApi: ICarAPI = {
     }
   },
 
-  // UTILITY functions
   getImageUrl: (record: Car, filename: string): string => {
     return pb.files.getURL(record, filename);
   },
@@ -321,7 +314,6 @@ export const CarApi: ICarAPI = {
   getPocketBase: () => pb,
 };
 
-// Helper function for creating car from FormData
 async function createCarFromFormData(formData: FormData): Promise<Car> {
   try {
     let brand = await pb
@@ -386,7 +378,6 @@ async function createCarFromFormData(formData: FormData): Promise<Car> {
   }
 }
 
-// Helper function for updating car from FormData
 async function updateCarFromFormData(
   id: string,
   formData: FormData,

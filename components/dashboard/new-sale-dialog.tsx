@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Tambahkan import untuk Textarea
+import { Textarea } from "@/components/ui/textarea";
 import CarApi from "@/lib/car-api";
 import { Sale } from "@/types/sales";
 import { Car } from "@/types/car";
@@ -93,7 +93,7 @@ export const NewSaleDialog = ({
     setPrice("");
     setPaymentMethod("Cash");
     setStatus("completed");
-    setNotes(""); // Jangan lupa reset notes juga
+    setNotes("");
   };
 
   return (

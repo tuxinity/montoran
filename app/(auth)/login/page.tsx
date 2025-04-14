@@ -14,7 +14,6 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Cek status autentikasi saat komponen dimuat
   useEffect(() => {
     if (pb.authStore.isValid) {
       router.push("/dashboard");
@@ -46,12 +45,11 @@ const LoginPage = () => {
       const scope = "email profile";
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-        redirectUri
+        redirectUri,
       )}&response_type=code&scope=${encodeURIComponent(
-        scope
+        scope,
       )}&access_type=offline`;
 
-      // Redirect ke halaman login Google
       window.location.href = authUrl;
     } catch (error) {
       console.error("Google login error:", error);

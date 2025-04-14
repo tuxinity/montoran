@@ -67,7 +67,6 @@ export interface AuthResponse {
   user: User;
 }
 
-// Filter types for API queries
 export interface FilterValues {
   brand?: string;
   bodyType?: string;
@@ -77,7 +76,6 @@ export interface FilterValues {
   soldStatus?: "all" | "available" | "sold";
 }
 
-// Create/Update request types
 export interface CreateCarRequest {
   model: string;
   condition: number;

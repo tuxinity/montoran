@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import PocketBase from "pocketbase";
 
-// Constants and configuration
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
@@ -22,7 +21,7 @@ export async function POST(request: NextRequest) {
       console.log("Missing required parameters");
       return NextResponse.json(
         { message: "Missing required parameters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!tokenData) {
       return NextResponse.json(
         { message: "Failed to exchange code for tokens" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (!userData) {
       return NextResponse.json(
         { message: "Failed to fetch user info from Google" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!pbUrl) {
       return NextResponse.json(
         { message: "PocketBase URL is not configured" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -61,7 +60,7 @@ export async function POST(request: NextRequest) {
           details:
             "This email is not registered in our system. Please contact administrator.",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -69,12 +68,12 @@ export async function POST(request: NextRequest) {
     const authResult = await authenticateExistingUser(
       pb,
       existingUser,
-      userData
+      userData,
     );
     if (!authResult.success) {
       return NextResponse.json(
         { message: authResult.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -98,7 +97,7 @@ export async function POST(request: NextRequest) {
           name: err.name,
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -200,7 +199,7 @@ async function authenticateExistingUser(
     name: string;
     picture?: string;
     id: string;
-  }
+  },
 ) {
   console.log("User exists, trying to authenticate...");
 
