@@ -70,12 +70,12 @@ function AuthCallbackContent() {
             setError("Account not registered");
             setErrorDetails(
               data.details ||
-                "This email is not registered in our system. Please contact administrator."
+                "This email is not registered in our system. Please contact administrator.",
             );
           } else {
             setError("Authentication failed");
             setErrorDetails(
-              data.message || "An error occurred during authentication."
+              data.message || "An error occurred during authentication.",
             );
           }
           setIsLoading(false);
@@ -103,7 +103,7 @@ function AuthCallbackContent() {
       clearTimeout(timeoutId);
       clearInterval(textInterval);
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, isLoading]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">

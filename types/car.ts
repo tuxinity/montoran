@@ -43,6 +43,7 @@ export interface Car extends PocketBaseRecord {
   year: number;
   description: string;
   images: string[];
+  is_sold: boolean;
   expand?: {
     model: Model & {
       expand?: {
@@ -73,6 +74,7 @@ export interface FilterValues {
   transmission?: string;
   minPrice?: number;
   maxPrice?: number;
+  soldStatus?: "all" | "available" | "sold";
 }
 
 // Create/Update request types

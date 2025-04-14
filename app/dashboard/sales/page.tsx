@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DownloadIcon,
   PlusCircleIcon,
   SearchIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
+  RefreshCw,
 } from "lucide-react";
 import { idrFormat } from "@/utils/idr-format";
 import { Input } from "@/components/ui/input";
@@ -27,84 +25,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const DUMMY_SALES: Sale[] = [
-  {
-    id: "S001",
-    date: "2023-10-15",
-    customerName: "Budi Santoso",
-    carName: "Toyota Avanza",
-    price: 210000000,
-    paymentMethod: "Cash",
-    status: "completed",
-  },
-  {
-    id: "S002",
-    date: "2023-10-20",
-    customerName: "Ade Yahya",
-    carName: "Mitsubishi Lancer",
-    price: 300000000,
-    paymentMethod: "Cash",
-    status: "completed",
-  },
-];
+import SalesApi, { SalesFilter, SortConfig } from "@/lib/sales-api";
+import { useToast } from "@/hooks/use-toast";
+import { NewSaleDialog } from "@/components/dashboard/new-sale-dialog";
 
 export default function SalesDashboard() {
+  const { toast } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
-  const [sortConfig, setSortConfig] = useState<{
-    field: keyof Sale;
-    direction: "asc" | "desc";
-  }>({ field: "date", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    field: "date",
+    direction: "desc",
+  });
+  const [showNewSaleDialog, setShowNewSaleDialog] = useState(false);
+  const [summary, setSummary] = useState({
+    totalSales: 0,
+    completedSales: 0,
+    pendingSales: 0,
+    totalRevenue: 0,
+  });
 
-  const loadSales = useCallback(() => {
+  const loadSales = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      let filteredSales = [...DUMMY_SALES];
+    try {
+      const filters: SalesFilter = {
+        search: search || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        paymentMethod: paymentFilter !== "all" ? paymentFilter : undefined,
+      };
 
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredSales = filteredSales.filter(
-          (sale) =>
-            sale.customerName.toLowerCase().includes(searchLower) ||
-            sale.carName.toLowerCase().includes(searchLower) ||
-            sale.id.toLowerCase().includes(searchLower),
-        );
-      }
+      const salesData = await SalesApi.getSales(filters, sortConfig);
+      setSales(salesData);
 
-      if (statusFilter && statusFilter !== "all") {
-        filteredSales = filteredSales.filter(
-          (sale) => sale.status === statusFilter,
-        );
-      }
-
-      if (paymentFilter && paymentFilter !== "all") {
-        filteredSales = filteredSales.filter(
-          (sale) => sale.paymentMethod === paymentFilter,
-        );
-      }
-
-      filteredSales.sort((a, b) => {
-        const { field, direction } = sortConfig;
-
-        if (field === "price") {
-          return direction === "asc" ? a.price - b.price : b.price - a.price;
-        }
-
-        const aValue = a[field].toString();
-        const bValue = b[field].toString();
-        return direction === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
+      const summaryData = await SalesApi.getSalesSummary();
+      setSummary(summaryData);
+    } catch (error) {
+      console.error("Error loading sales:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load sales data. Please try again.",
       });
-
-      setSales(filteredSales);
+    } finally {
       setLoading(false);
-    }, 800);
-  }, [search, statusFilter, paymentFilter, sortConfig]);
+    }
+  }, [search, statusFilter, paymentFilter, sortConfig, toast]);
 
   const handleSort = (field: keyof Sale) => {
     setSortConfig((prev) => ({
@@ -120,42 +88,122 @@ export default function SalesDashboard() {
     setPaymentFilter("all");
   };
 
+  const handleNewSale = async (saleData: Omit<Sale, "id">) => {
+    try {
+      await SalesApi.createSale(saleData);
+      toast({
+        title: "Success",
+        description: "Sale has been added successfully.",
+      });
+      loadSales();
+      setShowNewSaleDialog(false);
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add sale.",
+      });
+    }
+  };
+
+  const handleDeleteSale = async (id: string) => {
+    if (confirm("Are you sure you want to delete this sale?")) {
+      try {
+        await SalesApi.deleteSale(id);
+        toast({
+          title: "Success",
+          description: "Sale has been deleted successfully.",
+        });
+        loadSales();
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to delete sale.",
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     loadSales();
   }, [loadSales]);
+
+  const exportToCSV = () => {
+    if (sales.length === 0) return;
+
+    const headers = [
+      "ID",
+      "Date",
+      "Customer",
+      "Car",
+      "Price",
+      "Payment",
+      "Status",
+    ];
+    const csvData = sales.map((sale) => [
+      sale.id,
+      sale.date,
+      sale.customerName,
+      sale.expand?.car
+        ? `${sale.expand.car.expand?.model?.expand?.brand?.name || ""} ${sale.expand.car.expand?.model?.name || ""} (${sale.expand.car.year})`
+        : "Unknown",
+      sale.price.toString(),
+      sale.paymentMethod,
+      sale.status,
+      sale.notes || "",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Sales Dashboard</h1>
-          <Button>
-            <PlusCircleIcon className="mr-2 h-4 w-4" />
-            New Sale
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={loadSales}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button onClick={() => setShowNewSaleDialog(true)}>
+              <PlusCircleIcon className="mr-2 h-4 w-4" />
+              New Sale
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SalesSummaryCard
             title="Total Sales"
             loading={loading}
-            value={idrFormat(
-              sales.reduce(
-                (sum, sale) =>
-                  sum + (sale.status === "completed" ? sale.price : 0),
-                0,
-              ),
-            )}
+            value={summary.totalSales}
           />
           <SalesSummaryCard
             title="Completed Sales"
             loading={loading}
-            value={sales.filter((sale) => sale.status === "completed").length}
+            value={summary.completedSales}
           />
           <SalesSummaryCard
-            title="Pending Sales"
+            title="Total Revenue"
             loading={loading}
-            value={sales.filter((sale) => sale.status === "pending").length}
+            value={idrFormat(summary.totalRevenue)}
           />
         </div>
 
@@ -197,7 +245,11 @@ export default function SalesDashboard() {
             Clear Filters
           </Button>
 
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={exportToCSV}
+            disabled={sales.length === 0}
+          >
             <DownloadIcon className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -231,7 +283,7 @@ export default function SalesDashboard() {
                       Customer
                     </SortableHeader>
                     <SortableHeader
-                      field="carName"
+                      field="car"
                       currentSort={sortConfig}
                       onSort={handleSort}
                     >
@@ -295,7 +347,7 @@ export default function SalesDashboard() {
                         <td className="px-4 py-3 text-sm font-medium">
                           {sale.customerName}
                         </td>
-                        <td className="px-4 py-3 text-sm">{sale.carName}</td>
+                        <td className="px-4 py-3 text-sm">{sale.car}</td>
                         <td className="px-4 py-3 text-sm">
                           {idrFormat(sale.price)}
                         </td>
@@ -306,9 +358,28 @@ export default function SalesDashboard() {
                           <StatusBadge status={sale.status} />
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Button variant="ghost" size="sm">
-                            View
-                          </Button>
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Info",
+                                  description: "Edit feature coming soon",
+                                });
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => handleDeleteSale(sale.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -319,6 +390,12 @@ export default function SalesDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <NewSaleDialog
+        open={showNewSaleDialog}
+        onClose={() => setShowNewSaleDialog(false)}
+        onSubmit={handleNewSale}
+      />
     </div>
   );
 }

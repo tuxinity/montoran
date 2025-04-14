@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import AuthApi from "@/lib/auth-api";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaCar, FaSignOutAlt, FaUsers, FaChartBar } from "react-icons/fa";
+import { FaCar, FaSignOutAlt } from "react-icons/fa";
 import { BsStack } from "react-icons/bs";
 import { HiShoppingCart } from "react-icons/hi";
 

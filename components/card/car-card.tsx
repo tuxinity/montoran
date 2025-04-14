@@ -36,6 +36,15 @@ export function CarCard({ car }: CarCardProps) {
               {bodyType}
             </Badge>
           )}
+
+          {car.is_sold && (
+            <Badge
+              variant="destructive"
+              className="absolute right-3 top-3 z-10 bg-red-500 text-white font-bold hover:bg-red-600"
+            >
+              SOLD OUT
+            </Badge>
+          )}
           {imageUrl && (
             <div className="overflow-hidden aspect-[4/3]">
               <Image

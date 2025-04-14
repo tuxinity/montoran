@@ -1,23 +1,7 @@
-import { CarList } from "@/components/car-list";
-import CarApi from "@/lib/car-api";
-import { Suspense } from "react";
-import {
-  Search,
-  Car,
-  Shield,
-  Star,
-  CheckCircle,
-  Award,
-  Tag,
-  Clock,
-} from "lucide-react";
+import { Search, Shield, Star, CheckCircle, Award, Tag } from "lucide-react";
 import Link from "next/link";
 
-export const revalidate = 10;
-
 export default async function Home() {
-  const initialCars = await CarApi.getCars({});
-
   return (
     <main className="overflow-hidden">
       <div className="relative bg-gradient-to-br from-primary/20 via-background to-background">
@@ -28,7 +12,7 @@ export default async function Home() {
 
         <div className="relative container mx-auto px-4 py-28 md:py-36">
           <div className="max-w-3xl mx-auto text-center space-y-8">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/15 text-primary text-sm font-medium border border-primary/20 shadow-sm animate-[pulse_3s_infinite]">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/15 text-primary text-sm font-medium border border-primary/20 shadow-sm">
               <Star className="w-4 h-4" fill="currentColor" />
               <span>100% Mobil Bekas Berkualitas</span>
             </div>
@@ -61,7 +45,7 @@ export default async function Home() {
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 1200 120"
             preserveAspectRatio="none"
-            className="relative block w-full h-[60px] rotate-180 fill-muted/50"
+            className="relative block w-full h-[60px] rotate-180 fill-slate-900"
           >
             <path
               d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
@@ -76,32 +60,34 @@ export default async function Home() {
         </div>
       </div>
 
-      <div className="bg-muted/50 py-12">
+      <div className="bg-primary py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="p-4">
-              <p className="text-3xl md:text-4xl font-bold text-primary mb-2">
+              <p className="text-3xl md:text-4xl font-bold text-primary-foreground mb-2">
                 500+
               </p>
-              <p className="text-muted-foreground text-sm">Mobil Tersedia</p>
+              <p className="text-primary-foreground text-sm">Mobil Tersedia</p>
             </div>
             <div className="p-4">
-              <p className="text-3xl md:text-4xl font-bold text-primary mb-2">
+              <p className="text-3xl md:text-4xl font-bold text-primary-foreground mb-2">
                 1250+
               </p>
-              <p className="text-muted-foreground text-sm">Pelanggan Puas</p>
+              <p className="text-primary-foreground text-sm">Pelanggan Puas</p>
             </div>
             <div className="p-4">
-              <p className="text-3xl md:text-4xl font-bold text-primary mb-2">
+              <p className="text-3xl md:text-4xl font-bold text-primary-foreground mb-2">
                 15+
               </p>
-              <p className="text-muted-foreground text-sm">Tahun Pengalaman</p>
+              <p className="text-primary-foreground text-sm">
+                Tahun Pengalaman
+              </p>
             </div>
             <div className="p-4">
-              <p className="text-3xl md:text-4xl font-bold text-primary mb-2">
+              <p className="text-3xl md:text-4xl font-bold text-primary-foreground mb-2">
                 24/7
               </p>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-primary-foreground text-sm">
                 Dukungan Pelanggan
               </p>
             </div>
@@ -195,53 +181,6 @@ export default async function Home() {
                 </ul>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative py-20 bg-gradient-to-b from-background to-muted/30">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 32 32\' width=\'32\' height=\'32\' fill=\'none\' stroke=\'rgb(255 255 255 / 0.1)\'%3e%3cpath d=\'M0 .5H31.5V32\'/%3e%3c/svg%3e')] [mask-image:linear-gradient(0deg,transparent,white,transparent)]" />
-
-        <div className="container mx-auto px-4 relative">
-          <div className="relative z-10 mb-12 text-center">
-            <div className="inline-block mb-4 px-4 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-full">
-              Koleksi Mobil Terbaik
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              Pilihan Mobil Bekas Premium
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Pilih dari koleksi mobil bekas berkualitas kami yang telah melalui
-              proses inspeksi menyeluruh untuk memastikan performa dan keandalan
-              optimal
-            </p>
-          </div>
-
-          <Suspense
-            fallback={
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-4">
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg bg-muted animate-pulse h-80"
-                  ></div>
-                ))}
-              </div>
-            }
-          >
-            <CarList initialCars={initialCars} className="pb-8" />
-          </Suspense>
-
-          <div className="flex justify-center mt-10">
-            <Link
-              href="/car"
-              className="group flex items-center justify-center gap-2 text-primary hover:text-primary/90 font-medium"
-            >
-              <span>Lihat Semua Koleksi Mobil</span>
-              <span className="inline-block transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </Link>
           </div>
         </div>
       </div>

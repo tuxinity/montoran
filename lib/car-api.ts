@@ -42,6 +42,13 @@ export const CarApi: ICarAPI = {
         filterRules.push(`sell_price <= ${filters.maxPrice}`);
       }
 
+      // Tambahkan filter berdasarkan status jual
+      if (filters?.soldStatus === "available") {
+        filterRules.push(`is_sold = false`);
+      } else if (filters?.soldStatus === "sold") {
+        filterRules.push(`is_sold = true`);
+      }
+
       const records = await pb.collection("cars").getFullList<Car>({
         sort: "-created",
         expand: "model.brand,model.body_type",
@@ -57,7 +64,6 @@ export const CarApi: ICarAPI = {
       throw error;
     }
   },
-
   getCarById: async ({ id }: GetCarByIdOptions): Promise<Car> => {
     try {
       const record = await pb.collection("cars").getOne<Car>(id, {
@@ -171,7 +177,7 @@ export const CarApi: ICarAPI = {
   // UPDATE functions
   updateCar: async (
     id: string,
-    data: FormData | Partial<CreateCarRequest>
+    data: FormData | Partial<CreateCarRequest>,
   ): Promise<Car> => {
     try {
       if (data instanceof FormData) {
@@ -196,7 +202,7 @@ export const CarApi: ICarAPI = {
 
   updateModel: async (
     id: string,
-    data: Partial<CreateModelRequest>
+    data: Partial<CreateModelRequest>,
   ): Promise<Model> => {
     try {
       return await pb.collection(COLLECTIONS.MODELS).update<Model>(id, data);
@@ -208,7 +214,7 @@ export const CarApi: ICarAPI = {
 
   updateBrand: async (
     id: string,
-    data: Partial<CreateBrandRequest>
+    data: Partial<CreateBrandRequest>,
   ): Promise<Brand> => {
     try {
       return await pb.collection(COLLECTIONS.BRANDS).update<Brand>(id, data);
@@ -220,7 +226,7 @@ export const CarApi: ICarAPI = {
 
   updateBodyType: async (
     id: string,
-    data: Partial<CreateBodyTypeRequest>
+    data: Partial<CreateBodyTypeRequest>,
   ): Promise<BodyType> => {
     try {
       return await pb
@@ -284,7 +290,7 @@ export const CarApi: ICarAPI = {
 
   login: async (
     email: string,
-    password: string
+    password: string,
   ): Promise<{ token: string; user: { id: string; email: string } }> => {
     try {
       const authData = await pb
@@ -383,7 +389,7 @@ async function createCarFromFormData(formData: FormData): Promise<Car> {
 // Helper function for updating car from FormData
 async function updateCarFromFormData(
   id: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<Car> {
   try {
     let brand = await pb
