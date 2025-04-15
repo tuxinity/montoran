@@ -2,16 +2,19 @@ import { Car, User } from "./car";
 
 export type Sale = {
   id: string;
-  date: string;
-  customerName: string;
   car: string;
+  customer_name: string;
   price: number;
-  paymentMethod: string;
-  status: "completed" | "pending" | "cancelled";
+  payment_method: string;
   notes?: string;
-  salesPerson?: string;
+  created?: string;
+  updated?: string;
+  created_by: string;
+  deleted_by?: string;
+  deleted_at?: string;
   expand?: {
     car: Car;
-    salesPerson?: User;
+    created_by?: User;
+    deleted_by?: User;
   };
 };

@@ -9,14 +9,11 @@ import {
   PlusCircleIcon,
   SearchIcon,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { idrFormat } from "@/utils/idr-format";
 import { Input } from "@/components/ui/input";
-import {
-  SalesSummaryCard,
-  SortableHeader,
-  StatusBadge,
-} from "@/components/dashboard";
+import { SalesSummaryCard, SortableHeader } from "@/components/dashboard";
 import { Sale } from "@/types/sales";
 import {
   Select,
@@ -28,32 +25,58 @@ import {
 import SalesApi, { SalesFilter, SortConfig } from "@/lib/sales-api";
 import { useToast } from "@/hooks/use-toast";
 import { NewSaleDialog } from "@/components/dashboard/new-sale-dialog";
+import AuthApi from "@/lib/auth-api";
 
 export default function SalesDashboard() {
   const { toast } = useToast();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    field: "date",
+    field: "created",
     direction: "desc",
   });
   const [showNewSaleDialog, setShowNewSaleDialog] = useState(false);
   const [summary, setSummary] = useState({
     totalSales: 0,
-    completedSales: 0,
-    pendingSales: 0,
     totalRevenue: 0,
   });
+  const [userName, setUserName] = useState<string>("");
+
+  useEffect(() => {
+    // Check if we're authenticated
+    if (!AuthApi.isLoggedIn()) {
+      console.log("Not logged in");
+      return;
+    }
+
+    const user = AuthApi.getCurrentUser();
+
+    if (user) {
+      setUserName(user.name || "User");
+    } else {
+      console.log("No user data available");
+    }
+  }, []);
+
+  // Add auth state change listener
+  useEffect(() => {
+    const pb = AuthApi.getPocketBase();
+    pb.authStore.onChange(() => {
+      const user = AuthApi.getCurrentUser();
+      console.log("Auth state changed, user:", user);
+      if (user) {
+        setUserName(user.name || "User");
+      }
+    });
+  }, []);
 
   const loadSales = useCallback(async () => {
     setLoading(true);
     try {
       const filters: SalesFilter = {
         search: search || undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
         paymentMethod: paymentFilter !== "all" ? paymentFilter : undefined,
       };
 
@@ -72,7 +95,7 @@ export default function SalesDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, paymentFilter, sortConfig, toast]);
+  }, [search, paymentFilter, sortConfig, toast]);
 
   const handleSort = (field: keyof Sale) => {
     setSortConfig((prev) => ({
@@ -84,7 +107,6 @@ export default function SalesDashboard() {
 
   const resetFilters = () => {
     setSearch("");
-    setStatusFilter("all");
     setPaymentFilter("all");
   };
 
@@ -106,10 +128,14 @@ export default function SalesDashboard() {
     }
   };
 
-  const handleDeleteSale = async (id: string) => {
+  const handleSoftDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this sale?")) {
       try {
-        await SalesApi.deleteSale(id);
+        const userId = AuthApi.getPocketBase().authStore.model?.id;
+        if (!userId) {
+          throw new Error("User not authenticated");
+        }
+        await SalesApi.softDeleteSale(id, userId);
         toast({
           title: "Success",
           description: "Sale has been deleted successfully.",
@@ -139,19 +165,20 @@ export default function SalesDashboard() {
       "Car",
       "Price",
       "Payment",
-      "Status",
+      "Created By",
     ];
     const csvData = sales.map((sale) => [
       sale.id,
-      sale.date,
-      sale.customerName,
+      sale.created ? new Date(sale.created).toLocaleDateString() : "-",
+      sale.customer_name,
       sale.expand?.car
-        ? `${sale.expand.car.expand?.model?.expand?.brand?.name || ""} ${sale.expand.car.expand?.model?.name || ""} (${sale.expand.car.year})`
+        ? `${sale.expand.car.expand?.model?.expand?.brand?.name || ""} ${
+            sale.expand.car.expand?.model?.name || ""
+          } (${sale.expand.car.year})`
         : "Unknown",
       sale.price.toString(),
-      sale.paymentMethod,
-      sale.status,
-      sale.notes || "",
+      sale.payment_method,
+      sale.expand?.created_by?.name || "Unknown",
     ]);
 
     const csvContent = [
@@ -165,7 +192,7 @@ export default function SalesDashboard() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`,
+      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -176,7 +203,7 @@ export default function SalesDashboard() {
     <div className="container mx-auto p-6">
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Sales Dashboard</h1>
+          <h1 className="text-2xl font-bold">{userName}'s Sales Dashboard</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadSales}>
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -189,16 +216,11 @@ export default function SalesDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SalesSummaryCard
             title="Total Sales"
             loading={loading}
             value={summary.totalSales}
-          />
-          <SalesSummaryCard
-            title="Completed Sales"
-            loading={loading}
-            value={summary.completedSales}
           />
           <SalesSummaryCard
             title="Total Revenue"
@@ -217,18 +239,6 @@ export default function SalesDashboard() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
 
           <Select value={paymentFilter} onValueChange={setPaymentFilter}>
             <SelectTrigger className="w-[180px]">
@@ -269,14 +279,14 @@ export default function SalesDashboard() {
                       ID
                     </SortableHeader>
                     <SortableHeader
-                      field="date"
+                      field="created"
                       currentSort={sortConfig}
                       onSort={handleSort}
                     >
                       Date
                     </SortableHeader>
                     <SortableHeader
-                      field="customerName"
+                      field="customer_name"
                       currentSort={sortConfig}
                       onSort={handleSort}
                     >
@@ -297,18 +307,11 @@ export default function SalesDashboard() {
                       Price
                     </SortableHeader>
                     <SortableHeader
-                      field="paymentMethod"
+                      field="payment_method"
                       currentSort={sortConfig}
                       onSort={handleSort}
                     >
                       Payment
-                    </SortableHeader>
-                    <SortableHeader
-                      field="status"
-                      currentSort={sortConfig}
-                      onSort={handleSort}
-                    >
-                      Status
                     </SortableHeader>
                     <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
                       Actions
@@ -321,7 +324,7 @@ export default function SalesDashboard() {
                       .fill(0)
                       .map((_, index) => (
                         <tr key={index} className="border-b">
-                          {[1, 2, 3, 4, 5, 6, 7, 8].map((col) => (
+                          {[1, 2, 3, 4, 5, 6, 7].map((col) => (
                             <td key={col} className="px-4 py-3">
                               <Skeleton className="h-5 w-24" />
                             </td>
@@ -331,7 +334,7 @@ export default function SalesDashboard() {
                   ) : sales.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={7}
                         className="px-4 py-8 text-center text-muted-foreground"
                       >
                         No sales found. Try adjusting your filters.
@@ -342,42 +345,29 @@ export default function SalesDashboard() {
                       <tr key={sale.id} className="border-b hover:bg-muted/50">
                         <td className="px-4 py-3 text-sm">{sale.id}</td>
                         <td className="px-4 py-3 text-sm">
-                          {new Date(sale.date).toLocaleDateString()}
+                          {sale.created
+                            ? new Date(sale.created).toLocaleDateString()
+                            : "-"}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium">
-                          {sale.customerName}
+                          {sale.customer_name}
                         </td>
                         <td className="px-4 py-3 text-sm">{sale.car}</td>
                         <td className="px-4 py-3 text-sm">
                           {idrFormat(sale.price)}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          {sale.paymentMethod}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <StatusBadge status={sale.status} />
+                          {sale.payment_method}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end space-x-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                toast({
-                                  title: "Info",
-                                  description: "Edit feature coming soon",
-                                });
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               className="text-red-500 hover:text-red-700"
-                              onClick={() => handleDeleteSale(sale.id)}
+                              onClick={() => handleSoftDelete(sale.id)}
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>

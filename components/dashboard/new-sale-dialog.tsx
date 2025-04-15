@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import CarApi from "@/lib/car-api";
 import { Sale } from "@/types/sales";
 import { Car } from "@/types/car";
+import { pb } from "@/lib/pocketbase";
+import AuthApi from "@/lib/auth-api";
 
 interface NewSaleDialogProps {
   open: boolean;
@@ -40,7 +41,6 @@ export const NewSaleDialog = ({
   const [carId, setCarId] = useState("");
   const [price, setPrice] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [status, setStatus] = useState("completed");
   const [notes, setNotes] = useState("");
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,20 +67,38 @@ export const NewSaleDialog = ({
     }
   };
 
+  const handleCarSelect = (carId: string) => {
+    setCarId(carId);
+    const selectedCar = cars.find((car) => car.id === carId);
+    if (selectedCar) {
+      setPrice(selectedCar.sell_price.toString());
+    }
+  };
+
   const handleSubmit = () => {
     if (!customerName || !carId || !price) {
       alert("Please fill all required fields");
       return;
     }
 
+    if (!AuthApi.isLoggedIn()) {
+      alert("User not authenticated");
+      return;
+    }
+
+    const currentUser = AuthApi.getPocketBase().authStore.model?.id;
+    if (!currentUser) {
+      alert("Failed to get user information");
+      return;
+    }
+
     const saleData: Omit<Sale, "id"> = {
-      date: new Date().toISOString().slice(0, 10),
-      customerName,
+      customer_name: customerName,
       car: carId,
       price: parseFloat(price),
-      paymentMethod,
-      status: status as "completed" | "pending" | "cancelled",
+      payment_method: paymentMethod,
       notes: notes || undefined,
+      created_by: currentUser,
     };
 
     onSubmit(saleData);
@@ -92,7 +110,6 @@ export const NewSaleDialog = ({
     setCarId("");
     setPrice("");
     setPaymentMethod("Cash");
-    setStatus("completed");
     setNotes("");
   };
 
@@ -122,7 +139,7 @@ export const NewSaleDialog = ({
             <Label htmlFor="car" className="text-right">
               Car
             </Label>
-            <Select value={carId} onValueChange={setCarId}>
+            <Select value={carId} onValueChange={handleCarSelect}>
               <SelectTrigger className="col-span-3" id="car">
                 <SelectValue placeholder="Select a car" />
               </SelectTrigger>
@@ -139,7 +156,9 @@ export const NewSaleDialog = ({
                   cars.map((car) => (
                     <SelectItem key={car.id} value={car.id}>
                       {car.expand?.model.expand?.brand.name}{" "}
-                      {car.expand?.model.name} - {car.year}
+                      {car.expand?.model.name} - {car.year} -{" "}
+                      {car.expand?.model.expand?.body_type.name} - IDR{" "}
+                      {car.sell_price.toLocaleString()}
                     </SelectItem>
                   ))
                 )}
@@ -171,26 +190,9 @@ export const NewSaleDialog = ({
                 <SelectItem value="Cash">Cash</SelectItem>
                 <SelectItem value="Credit">Credit</SelectItem>
                 <SelectItem value="Transfer">Bank Transfer</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
-              Status
-            </Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="col-span-3" id="status">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Tambahkan input untuk notes */}
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="notes" className="text-right pt-2">
               Notes
