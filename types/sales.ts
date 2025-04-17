@@ -7,6 +7,7 @@ export type Sale = {
   price: number;
   payment_method: string;
   notes?: string;
+  description?: string;
   created?: string;
   updated?: string;
   created_by: string;

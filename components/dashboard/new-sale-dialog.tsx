@@ -25,6 +25,7 @@ import { Sale } from "@/types/sales";
 import { Car } from "@/types/car";
 import { pb } from "@/lib/pocketbase";
 import AuthApi from "@/lib/auth-api";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewSaleDialogProps {
   open: boolean;
@@ -37,11 +38,12 @@ export const NewSaleDialog = ({
   onClose,
   onSubmit,
 }: NewSaleDialogProps) => {
+  const { toast } = useToast();
   const [customerName, setCustomerName] = useState("");
   const [carId, setCarId] = useState("");
   const [price, setPrice] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [notes, setNotes] = useState("");
+  const [description, setDescription] = useState("");
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -75,29 +77,78 @@ export const NewSaleDialog = ({
     }
   };
 
+  const formatPrice = (value: string) => {
+    // Remove all non-digit characters
+    const numericValue = value.replace(/\D/g, "");
+
+    // Format with commas
+    const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    return formattedValue;
+  };
+
+  const parsePrice = (value: string) => {
+    return parseFloat(value.replace(/,/g, ""));
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatPrice(e.target.value);
+    setPrice(formattedValue);
+  };
+
   const handleSubmit = () => {
-    if (!customerName || !carId || !price) {
-      alert("Please fill all required fields");
+    if (!customerName) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter customer name",
+      });
+      return;
+    }
+
+    if (!carId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select a car",
+      });
+      return;
+    }
+
+    if (!price) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter price",
+      });
       return;
     }
 
     if (!AuthApi.isLoggedIn()) {
-      alert("User not authenticated");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "User not authenticated",
+      });
       return;
     }
 
     const currentUser = AuthApi.getPocketBase().authStore.model?.id;
     if (!currentUser) {
-      alert("Failed to get user information");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to get user information",
+      });
       return;
     }
 
     const saleData: Omit<Sale, "id"> = {
       customer_name: customerName,
       car: carId,
-      price: parseFloat(price),
+      price: parsePrice(price),
       payment_method: paymentMethod,
-      notes: notes || undefined,
+      description: description || undefined,
       created_by: currentUser,
     };
 
@@ -110,7 +161,7 @@ export const NewSaleDialog = ({
     setCarId("");
     setPrice("");
     setPaymentMethod("Cash");
-    setNotes("");
+    setDescription("");
   };
 
   return (
@@ -169,14 +220,18 @@ export const NewSaleDialog = ({
             <Label htmlFor="price" className="text-right">
               Price
             </Label>
-            <Input
-              id="price"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="col-span-3"
-              placeholder="Sale price"
-            />
+            <div className="col-span-3 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                IDR
+              </span>
+              <Input
+                id="price"
+                value={price}
+                onChange={handlePriceChange}
+                className="pl-12"
+                placeholder="0"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="payment" className="text-right">
@@ -194,15 +249,15 @@ export const NewSaleDialog = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="notes" className="text-right pt-2">
-              Notes
+            <Label htmlFor="description" className="text-right pt-2">
+              Description
             </Label>
             <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="col-span-3"
-              placeholder="Optional notes about this sale"
+              placeholder="Add description about this sale"
               rows={3}
             />
           </div>

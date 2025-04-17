@@ -13,13 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { CarFilters, type FilterValues } from "@/components/car-filters";
+import { CarFilters } from "@/components/car-filters";
 import debounce from "lodash/debounce";
 import { idrFormat } from "@/utils/idr-format";
 import { CarForm } from "@/components/car-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FilterValues } from "@/types/car";
 
 type ModalType = "create" | "edit" | "delete" | null;
 

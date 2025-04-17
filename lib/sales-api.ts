@@ -24,11 +24,11 @@ const SalesApi = {
     sort?: SortConfig
   ): Promise<Sale[]> => {
     try {
-      const filterRules: string[] = [];
+      const filterRules: string[] = ['deleted_at = ""'];
 
       if (filters?.search) {
         filterRules.push(
-          `(customerName ~ "${filters.search}" || id ~ "${filters.search}")`
+          `(customer_name ~ "${filters.search}" || id ~ "${filters.search}")`
         );
       }
 
@@ -37,25 +37,25 @@ const SalesApi = {
       }
 
       if (filters?.paymentMethod && filters.paymentMethod !== "all") {
-        filterRules.push(`paymentMethod = "${filters.paymentMethod}"`);
+        filterRules.push(`payment_method = "${filters.paymentMethod}"`);
       }
 
       if (filters?.dateFrom) {
-        filterRules.push(`date >= "${filters.dateFrom}"`);
+        filterRules.push(`created >= "${filters.dateFrom}"`);
       }
 
       if (filters?.dateTo) {
-        filterRules.push(`date <= "${filters.dateTo}"`);
+        filterRules.push(`created <= "${filters.dateTo}"`);
       }
 
       const sortParam = sort
         ? `${sort.direction === "desc" ? "-" : ""}${sort.field}`
-        : "-date";
+        : "-created";
 
       const records = await pb.collection(COLLECTIONS.SALES).getFullList<Sale>({
         sort: sortParam,
-        filter: filterRules.length > 0 ? filterRules.join(" && ") : undefined,
-        expand: "car,created_by",
+        filter: filterRules.join(" && "),
+        expand: "car,car.model,car.model.brand,created_by",
         $autoCancel: false,
       });
 
@@ -150,6 +150,7 @@ const SalesApi = {
       const allSales = await pb
         .collection(COLLECTIONS.SALES)
         .getFullList<Sale>({
+          filter: 'deleted_at = ""',
           $autoCancel: false,
         });
 
@@ -165,12 +166,30 @@ const SalesApi = {
     }
   },
 
-  softDeleteSale: async (id: string, userId: string): Promise<void> => {
+  softDeleteSale: async (
+    id: string,
+    userId: string,
+    notes: string
+  ): Promise<void> => {
     try {
+      // Get the sale first to get the car ID
+      const sale = await pb.collection(COLLECTIONS.SALES).getOne<Sale>(id, {
+        expand: "car",
+      });
+
+      // Update the sale with deletion info
       await pb.collection(COLLECTIONS.SALES).update(id, {
         deleted_by: userId,
         deleted_at: new Date().toISOString(),
+        deletion_notes: notes,
       });
+
+      // Update the car's is_sold status to false
+      if (sale.car) {
+        await pb.collection(COLLECTIONS.CARS).update(sale.car, {
+          is_sold: false,
+        });
+      }
     } catch (error) {
       console.error(`Error soft deleting sale ${id}:`, error);
       throw error;

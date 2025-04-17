@@ -1,5 +1,6 @@
 "use client";
 
+import AuthApi from "@/lib/auth-api";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,7 +26,7 @@ import {
 import SalesApi, { SalesFilter, SortConfig } from "@/lib/sales-api";
 import { useToast } from "@/hooks/use-toast";
 import { NewSaleDialog } from "@/components/dashboard/new-sale-dialog";
-import AuthApi from "@/lib/auth-api";
+import { DeleteSaleDialog } from "@/components/dashboard/delete-sale-dialog";
 
 export default function SalesDashboard() {
   const { toast } = useToast();
@@ -33,6 +34,8 @@ export default function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: "created",
     direction: "desc",
@@ -43,6 +46,8 @@ export default function SalesDashboard() {
     totalRevenue: 0,
   });
   const [userName, setUserName] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if we're authenticated
@@ -78,6 +83,8 @@ export default function SalesDashboard() {
       const filters: SalesFilter = {
         search: search || undefined,
         paymentMethod: paymentFilter !== "all" ? paymentFilter : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
       };
 
       const salesData = await SalesApi.getSales(filters, sortConfig);
@@ -95,7 +102,7 @@ export default function SalesDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [search, paymentFilter, sortConfig, toast]);
+  }, [search, paymentFilter, dateFrom, dateTo, sortConfig, toast]);
 
   const handleSort = (field: keyof Sale) => {
     setSortConfig((prev) => ({
@@ -108,6 +115,8 @@ export default function SalesDashboard() {
   const resetFilters = () => {
     setSearch("");
     setPaymentFilter("all");
+    setDateFrom("");
+    setDateTo("");
   };
 
   const handleNewSale = async (saleData: Omit<Sale, "id">) => {
@@ -128,26 +137,34 @@ export default function SalesDashboard() {
     }
   };
 
-  const handleSoftDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this sale?")) {
-      try {
-        const userId = AuthApi.getPocketBase().authStore.model?.id;
-        if (!userId) {
-          throw new Error("User not authenticated");
-        }
-        await SalesApi.softDeleteSale(id, userId);
-        toast({
-          title: "Success",
-          description: "Sale has been deleted successfully.",
-        });
-        loadSales();
-      } catch {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to delete sale.",
-        });
+  const handleDeleteClick = (id: string) => {
+    setSelectedSaleId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async (notes: string) => {
+    if (!selectedSaleId) return;
+
+    try {
+      const userId = AuthApi.getPocketBase().authStore.model?.id;
+      if (!userId) {
+        throw new Error("User not authenticated");
       }
+      await SalesApi.softDeleteSale(selectedSaleId, userId, notes);
+      toast({
+        title: "Success",
+        description: "Sale has been deleted successfully.",
+      });
+      loadSales();
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete sale.",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedSaleId(null);
     }
   };
 
@@ -205,10 +222,6 @@ export default function SalesDashboard() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">{userName}'s Sales Dashboard</h1>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={loadSales}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
             <Button onClick={() => setShowNewSaleDialog(true)}>
               <PlusCircleIcon className="mr-2 h-4 w-4" />
               New Sale
@@ -250,6 +263,23 @@ export default function SalesDashboard() {
               <SelectItem value="Credit">Credit</SelectItem>
             </SelectContent>
           </Select>
+
+          <div className="flex gap-2">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-[150px]"
+              placeholder="From date"
+            />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-[150px]"
+              placeholder="To date"
+            />
+          </div>
 
           <Button variant="outline" onClick={resetFilters}>
             Clear Filters
@@ -313,6 +343,9 @@ export default function SalesDashboard() {
                     >
                       Payment
                     </SortableHeader>
+                    <th className="px-4 py-3 text-sm font-medium text-muted-foreground">
+                      Description
+                    </th>
                     <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
                       Actions
                     </th>
@@ -324,7 +357,7 @@ export default function SalesDashboard() {
                       .fill(0)
                       .map((_, index) => (
                         <tr key={index} className="border-b">
-                          {[1, 2, 3, 4, 5, 6, 7].map((col) => (
+                          {[1, 2, 3, 4, 5, 6, 7, 8].map((col) => (
                             <td key={col} className="px-4 py-3">
                               <Skeleton className="h-5 w-24" />
                             </td>
@@ -334,7 +367,7 @@ export default function SalesDashboard() {
                   ) : sales.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="px-4 py-8 text-center text-muted-foreground"
                       >
                         No sales found. Try adjusting your filters.
@@ -352,12 +385,24 @@ export default function SalesDashboard() {
                         <td className="px-4 py-3 text-sm font-medium">
                           {sale.customer_name}
                         </td>
-                        <td className="px-4 py-3 text-sm">{sale.car}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {sale.expand?.car
+                            ? `${
+                                sale.expand.car.expand?.model?.expand?.brand
+                                  ?.name || ""
+                              } ${sale.expand.car.expand?.model?.name || ""} (${
+                                sale.expand.car.year
+                              })`
+                            : "Unknown"}
+                        </td>
                         <td className="px-4 py-3 text-sm">
                           {idrFormat(sale.price)}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           {sale.payment_method}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {sale.description || "-"}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end space-x-2">
@@ -365,7 +410,7 @@ export default function SalesDashboard() {
                               variant="ghost"
                               size="sm"
                               className="text-red-500 hover:text-red-700"
-                              onClick={() => handleSoftDelete(sale.id)}
+                              onClick={() => handleDeleteClick(sale.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -385,6 +430,13 @@ export default function SalesDashboard() {
         open={showNewSaleDialog}
         onClose={() => setShowNewSaleDialog(false)}
         onSubmit={handleNewSale}
+      />
+
+      <DeleteSaleDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        saleId={selectedSaleId || ""}
       />
     </div>
   );
