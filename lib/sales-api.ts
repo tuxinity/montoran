@@ -8,6 +8,7 @@ export type SalesFilter = {
   paymentMethod?: string;
   dateFrom?: string;
   dateTo?: string;
+  createdBy?: string;
 };
 
 export type SortConfig = {
@@ -46,6 +47,10 @@ const SalesApi = {
 
       if (filters?.dateTo) {
         filterRules.push(`created <= "${filters.dateTo}"`);
+      }
+
+      if (filters?.createdBy && filters.createdBy !== "all") {
+        filterRules.push(`created_by = "${filters.createdBy}"`);
       }
 
       const sortParam = sort
