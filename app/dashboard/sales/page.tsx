@@ -33,7 +33,6 @@ import { NewSaleDialog } from "@/components/dashboard/new-sale-dialog";
 import { DeleteSaleDialog } from "@/components/dashboard/delete-sale-dialog";
 import { pb } from "@/lib/pocketbase";
 import { COLLECTIONS } from "@/lib/constants";
-import { User } from "@/types/car";
 
 export default function SalesDashboard() {
   const { toast } = useToast();

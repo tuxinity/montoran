@@ -5,6 +5,7 @@ export const COLLECTIONS = {
   BODY_TYPES: "body_type",
   USERS: "users",
   SALES: "sales",
+  CUSTOMERS: "customers",
 } as const;
 
 export const SORT_OPTIONS = {
