@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Menu } from "lucide-react";
 import AuthApi from "@/lib/auth-api";
 import { useEffect, useState } from "react";
 
@@ -12,7 +11,6 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
-  const router = useRouter();
   const [userName, setUserName] = useState("User");
 
   useEffect(() => {
@@ -21,12 +19,6 @@ export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
       setUserName(user.name || "User");
     }
   }, []);
-
-  const handleLogout = () => {
-    AuthApi.logout();
-    router.push("/login");
-    router.refresh();
-  };
 
   return (
     <div className="h-14 border-b">
@@ -44,14 +36,6 @@ export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{userName}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>

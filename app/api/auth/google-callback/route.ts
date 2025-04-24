@@ -115,7 +115,7 @@ async function exchangeCodeForToken(code: string, redirectUri: string) {
     }
 
     return await response.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -136,7 +136,7 @@ async function fetchGoogleUserInfo(accessToken: string) {
     }
 
     return await response.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -155,7 +155,7 @@ async function findUserByEmail(pb: PocketBase, email: string) {
     }
 
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -196,7 +196,7 @@ async function authenticateExistingUser(
       success: true,
       token: pb.authStore.token,
     };
-  } catch (error: unknown) {
+  } catch {
     return {
       success: false,
       message: "Failed to authenticate existing user",

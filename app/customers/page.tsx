@@ -13,8 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Trash } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { DeleteCustomerDialog } from "@/components/delete-customer-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Customer {
   id: string;
@@ -26,7 +25,6 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [newCustomer, setNewCustomer] = useState({ name: "", phone: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
     null
   );
@@ -74,34 +72,6 @@ export default function CustomersPage() {
 
   const handleDeleteCustomer = async (customer: Customer) => {
     setCustomerToDelete(customer);
-  };
-
-  const confirmDelete = async () => {
-    if (!customerToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/customers/${customerToDelete.id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete customer");
-
-      setCustomers(customers.filter((c) => c.id !== customerToDelete.id));
-      toast({
-        title: "Success",
-        description: "Customer deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete customer",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setCustomerToDelete(null);
-    }
   };
 
   return (
@@ -171,14 +141,6 @@ export default function CustomersPage() {
           </Table>
         </CardContent>
       </Card>
-
-      <DeleteCustomerDialog
-        customer={customerToDelete}
-        isOpen={!!customerToDelete}
-        onClose={() => setCustomerToDelete(null)}
-        onConfirm={confirmDelete}
-        isLoading={isDeleting}
-      />
     </div>
   );
 }

@@ -37,7 +37,7 @@ export default function CustomersPage() {
         search ? { search } : undefined
       );
       setCustomers(records);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load customers",
@@ -67,7 +67,7 @@ export default function CustomersPage() {
         title: "Success",
         description: "Customer deleted successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete customer",

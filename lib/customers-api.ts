@@ -1,7 +1,6 @@
 import { pb } from "./pocketbase";
 import { COLLECTIONS } from "./constants";
 import { Customer, CustomerFilter, SortConfig } from "@/types/customer";
-import { RecordModel } from "pocketbase";
 
 export class CustomersApi {
   static async getCustomers(filters?: CustomerFilter, sort?: SortConfig) {

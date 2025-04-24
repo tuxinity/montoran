@@ -24,7 +24,6 @@ export function DeleteSaleDialog({
   open,
   onClose,
   onConfirm,
-  saleId,
 }: DeleteSaleDialogProps) {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");

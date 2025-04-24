@@ -23,20 +23,21 @@ import { Textarea } from "@/components/ui/textarea";
 import CarApi from "@/lib/car-api";
 import { Sale } from "@/types/sales";
 import { Car } from "@/types/car";
-import { pb } from "@/lib/pocketbase";
 import AuthApi from "@/lib/auth-api";
 import { useToast } from "@/hooks/use-toast";
 
 interface NewSaleDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Sale, "id">) => void;
+  onSubmit: (data: Omit<Sale, "id">) => Promise<void>;
+  preselectedCarId?: string;
 }
 
 export const NewSaleDialog = ({
   open,
   onClose,
   onSubmit,
+  preselectedCarId,
 }: NewSaleDialogProps) => {
   const { toast } = useToast();
   const [customerName, setCustomerName] = useState("");
@@ -52,6 +53,12 @@ export const NewSaleDialog = ({
       loadCars();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (preselectedCarId) {
+      setCarId(preselectedCarId);
+    }
+  }, [preselectedCarId]);
 
   const loadCars = async () => {
     setLoading(true);

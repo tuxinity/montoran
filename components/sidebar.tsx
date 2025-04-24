@@ -9,13 +9,12 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Car, LogOut, Home, CarFront, Users, DollarSign } from "lucide-react";
+import { Car, LogOut, CarFront, Users, DollarSign } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import AuthApi from "@/lib/auth-api";
 
 const navigationItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/dashboard/cars", label: "Cars", icon: CarFront },
+  { href: "/dashboard", label: "Cars", icon: CarFront },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/sales", label: "Sales", icon: DollarSign },
 ];

@@ -5,13 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DownloadIcon,
-  PlusCircleIcon,
-  SearchIcon,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { DownloadIcon, PlusCircleIcon, SearchIcon, Trash2 } from "lucide-react";
 import { idrFormat } from "@/utils/idr-format";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +27,8 @@ import { NewSaleDialog } from "@/components/dashboard/new-sale-dialog";
 import { DeleteSaleDialog } from "@/components/dashboard/delete-sale-dialog";
 import { pb } from "@/lib/pocketbase";
 import { COLLECTIONS } from "@/lib/constants";
+import { QRScanner } from "@/components/dashboard/qr-scanner";
+import CarApi from "@/lib/car-api";
 
 export default function SalesDashboard() {
   const { toast } = useToast();
@@ -176,7 +172,7 @@ export default function SalesDashboard() {
     if (!selectedSaleId) return;
 
     try {
-      const userId = AuthApi.getPocketBase().authStore.model?.id;
+      const userId = AuthApi.getPocketBase().authStore.record?.id;
       if (!userId) {
         throw new Error("User not authenticated");
       }
@@ -239,11 +235,42 @@ export default function SalesDashboard() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`
+      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`,
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleQRCodeScanned = async (carId: string) => {
+    try {
+      setLoading(true);
+      const car = await CarApi.getCarById({ id: carId });
+
+      if (car.is_sold) {
+        toast({
+          variant: "destructive",
+          title: "Car Already Sold",
+          description: "This car has already been sold.",
+        });
+        return;
+      }
+
+      setShowNewSaleDialog(true);
+
+      toast({
+        title: "Car Found",
+        description: `${car.expand?.model?.expand?.brand?.name} ${car.expand?.model?.name} ready for sale.`,
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to find car with the scanned QR code",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -254,13 +281,13 @@ export default function SalesDashboard() {
             {userName}'s Sales Dashboard
           </h1>
           <div className="flex gap-2">
-            <Button
-              onClick={() => setShowNewSaleDialog(true)}
-              className="w-full md:w-auto"
-            >
-              <PlusCircleIcon className="mr-2 h-4 w-4" />
-              New Sale
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button onClick={() => setShowNewSaleDialog(true)}>
+                <PlusCircleIcon className="h-4 w-4 mr-2" />
+                New Sale
+              </Button>
+              <QRScanner onSuccess={handleQRCodeScanned} />
+            </div>
           </div>
         </div>
 
