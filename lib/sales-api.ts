@@ -22,14 +22,14 @@ const SalesApi = {
    */
   getSales: async (
     filters?: SalesFilter,
-    sort?: SortConfig
+    sort?: SortConfig,
   ): Promise<Sale[]> => {
     try {
       const filterRules: string[] = ['deleted_at = ""'];
 
       if (filters?.search) {
         filterRules.push(
-          `(customer_name ~ "${filters.search}" || id ~ "${filters.search}")`
+          `(customer_name ~ "${filters.search}" || id ~ "${filters.search}")`,
         );
       }
 
@@ -102,7 +102,7 @@ const SalesApi = {
 
   updateSale: async (
     id: string,
-    data: Partial<Omit<Sale, "id">>
+    data: Partial<Omit<Sale, "id">>,
   ): Promise<Sale> => {
     try {
       const record = await pb
@@ -174,22 +174,19 @@ const SalesApi = {
   softDeleteSale: async (
     id: string,
     userId: string,
-    notes: string
+    notes: string,
   ): Promise<void> => {
     try {
-      // Get the sale first to get the car ID
       const sale = await pb.collection(COLLECTIONS.SALES).getOne<Sale>(id, {
         expand: "car",
       });
 
-      // Update the sale with deletion info
       await pb.collection(COLLECTIONS.SALES).update(id, {
         deleted_by: userId,
         deleted_at: new Date().toISOString(),
-        deletion_notes: notes,
+        notes: notes,
       });
 
-      // Update the car's is_sold status to false
       if (sale.car) {
         await pb.collection(COLLECTIONS.CARS).update(sale.car, {
           is_sold: false,

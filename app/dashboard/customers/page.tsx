@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +30,7 @@ export default function CustomersPage() {
     null
   );
 
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     setLoading(true);
     try {
       const records = await CustomersApi.getCustomers(
@@ -46,11 +46,11 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, toast]);
 
   useEffect(() => {
     loadCustomers();
-  }, [search]);
+  }, [search, loadCustomers]);
 
   const handleCustomerAdded = (customer: Customer) => {
     setCustomers([customer, ...customers]);
@@ -60,7 +60,7 @@ export default function CustomersPage() {
     try {
       await CustomersApi.deleteCustomer(
         customer.id,
-        pb.authStore.model?.id || ""
+        pb.authStore.record?.id || ""
       );
       setCustomers(customers.filter((c) => c.id !== customer.id));
       toast({

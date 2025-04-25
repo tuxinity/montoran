@@ -169,7 +169,7 @@ export function CarForm({
     setPreviewUrls(urls);
 
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, [imageFiles]);
+  }, [imageFiles, previewUrls]);
 
   useEffect(() => {
     if (modalType === "edit") {

@@ -91,7 +91,7 @@ function AuthCallbackContent() {
 
         pb.authStore.save(data.token, userData);
         router.push("/dashboard");
-      } catch (error) {
+      } catch {
         setError("Authentication failed");
         setErrorDetails("An unexpected error occurred. Please try again.");
         setIsLoading(false);

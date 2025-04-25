@@ -25,9 +25,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [newCustomer, setNewCustomer] = useState({ name: "", phone: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
-    null
-  );
+
   const { toast } = useToast();
 
   const handleAddCustomer = async () => {
@@ -59,7 +57,7 @@ export default function CustomersPage() {
         title: "Success",
         description: "Customer added successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to add customer",
@@ -71,7 +69,8 @@ export default function CustomersPage() {
   };
 
   const handleDeleteCustomer = async (customer: Customer) => {
-    setCustomerToDelete(customer);
+    // Implement delete functionality here
+    console.log("Delete customer:", customer);
   };
 
   return (

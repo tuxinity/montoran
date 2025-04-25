@@ -114,8 +114,11 @@ export function AddCustomerDialog({ onCustomerAdded }: AddCustomerDialogProps) {
         title: "Success",
         description: "Customer added successfully",
       });
-    } catch (error: any) {
-      if (error.message === "Phone number already exists") {
+    } catch (error: Error | unknown) {
+      if (
+        error instanceof Error &&
+        error.message === "Phone number already exists"
+      ) {
         setErrors({
           ...errors,
           phone: "This phone number is already registered",

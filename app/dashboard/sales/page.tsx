@@ -176,13 +176,15 @@ export default function SalesDashboard() {
       if (!userId) {
         throw new Error("User not authenticated");
       }
+      console.log("Deleting sale with notes:", notes);
       await SalesApi.softDeleteSale(selectedSaleId, userId, notes);
       toast({
         title: "Success",
         description: "Sale has been deleted successfully.",
       });
       loadSales();
-    } catch {
+    } catch (error) {
+      console.log("Error deleting sale:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -235,7 +237,7 @@ export default function SalesDashboard() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`,
+      `sales_export_${new Date().toISOString().slice(0, 10)}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -278,7 +280,7 @@ export default function SalesDashboard() {
       <div className="flex flex-col gap-4 md:gap-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <h1 className="text-xl md:text-2xl font-bold">
-            {userName}'s Sales Dashboard
+            {userName}&apos;s Sales Dashboard
           </h1>
           <div className="flex gap-2">
             <div className="flex items-center space-x-2">
