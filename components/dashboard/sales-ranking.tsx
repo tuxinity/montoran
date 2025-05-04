@@ -13,7 +13,10 @@ export const SalesRanking = ({ sales, users }: SalesRankingProps) => {
   const userStats = users.map((user) => {
     const userSales = sales.filter((sale) => sale.created_by === user.id);
     const totalSales = userSales.length;
-    const totalRevenue = userSales.reduce((sum, sale) => sum + sale.price, 0);
+    // Round down the total revenue to the nearest integer
+    const totalRevenue = Math.floor(
+      userSales.reduce((sum, sale) => sum + sale.price, 0)
+    );
 
     return {
       user,
