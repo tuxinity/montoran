@@ -164,12 +164,16 @@ export function CarForm({
   }, [selectedBrand, toast]);
 
   useEffect(() => {
+    // Hapus URL lama
     previewUrls.forEach((url) => URL.revokeObjectURL(url));
+
+    // Buat URL baru
     const urls = imageFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
 
+    // Cleanup saat unmount
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, [imageFiles, previewUrls]);
+  }, [imageFiles]); // Hapus previewUrls dari dependensi
 
   useEffect(() => {
     if (modalType === "edit") {

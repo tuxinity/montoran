@@ -136,13 +136,16 @@ const DashboardPage = () => {
     }
   }, [toast]);
 
+  // Gunakan useEffect dengan dependensi kosong untuk inisialisasi
   useEffect(() => {
     loadMasterData();
     loadCars();
+
     return () => {
       debouncedLoadCars.cancel();
     };
-  }, [loadMasterData, loadCars, debouncedLoadCars]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hapus dependensi untuk menghindari loop
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -160,8 +163,14 @@ const DashboardPage = () => {
           description: "New car has been added successfully.",
         });
       }
-      await loadCars();
+
+      // Tutup modal sebelum memuat ulang data
       closeModal();
+
+      // Muat ulang data setelah modal ditutup
+      setTimeout(() => {
+        loadCars();
+      }, 100);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -169,6 +178,7 @@ const DashboardPage = () => {
         title: "Error",
         description: "Failed to save car data.",
       });
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -180,8 +190,15 @@ const DashboardPage = () => {
     setLoading(true);
     try {
       await CarApi.deleteCar(selectedCar.id);
-      await loadCars();
+
+      // Tutup modal sebelum memuat ulang data
       closeModal();
+
+      // Muat ulang data setelah modal ditutup
+      setTimeout(() => {
+        loadCars();
+      }, 100);
+
       toast({
         title: "Success",
         description: "Car has been deleted successfully.",
@@ -193,6 +210,7 @@ const DashboardPage = () => {
         description:
           error instanceof Error ? error.message : "Failed to delete car",
       });
+      setLoading(false);
     } finally {
       setLoading(false);
     }

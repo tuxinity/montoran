@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import CarApi from "@/lib/car-api";
 import { CarCard } from "./card";
-import type { Car } from "@/types/car";
-import type { FilterValues } from "@/components/car-filters";
+import type { Car, FilterValues } from "@/types/car";
 import { CarFilters } from "@/components/car-filters";
 import { CarListSkeleton } from "./skeleton/car-list-skeleton";
 
@@ -76,8 +75,40 @@ export function CarList({ initialCars, className }: CarListProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
         {isLoading ? (
           <CarListSkeleton />
-        ) : (
+        ) : cars.length > 0 ? (
           cars.map((car) => <CarCard key={car.id} car={car} />)
+        ) : (
+          <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <svg
+                className="w-12 h-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Tidak Ada Mobil Tersedia
+            </h3>
+            <p className="text-gray-500 max-w-md mx-auto mb-6">
+              {search || Object.keys(filters).length > 0
+                ? "Coba ubah filter pencarian Anda atau kunjungi kembali nanti untuk melihat koleksi terbaru kami."
+                : "Semua mobil kami telah terjual. Silakan kunjungi kembali nanti untuk melihat koleksi terbaru kami."}
+            </p>
+            <a
+              href="/contact"
+              className="inline-flex items-center justify-center rounded-md bg-primary text-white px-6 py-3 text-sm font-medium shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Hubungi Kami
+            </a>
+          </div>
         )}
       </div>
     </div>
