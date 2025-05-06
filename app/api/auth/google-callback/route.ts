@@ -8,20 +8,13 @@ const GOOGLE_USER_INFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
  * Handler for Google OAuth callback API route
  */
 export async function POST(request: NextRequest) {
-  console.log("API route called");
-
   try {
     const { code, redirectUri } = await request.json();
-    console.log("Received code and redirectUri:", {
-      codeLength: code?.length,
-      redirectUri,
-    });
 
     if (!code || !redirectUri) {
-      console.log("Missing required parameters");
       return NextResponse.json(
         { message: "Missing required parameters" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -29,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (!tokenData) {
       return NextResponse.json(
         { message: "Failed to exchange code for tokens" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -37,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (!userData) {
       return NextResponse.json(
         { message: "Failed to fetch user info from Google" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -45,12 +38,11 @@ export async function POST(request: NextRequest) {
     if (!pbUrl) {
       return NextResponse.json(
         { message: "PocketBase URL is not configured" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     const pb = new PocketBase(pbUrl);
-
     const existingUser = await findUserByEmail(pb, userData.email);
 
     if (!existingUser) {
@@ -60,24 +52,22 @@ export async function POST(request: NextRequest) {
           details:
             "This email is not registered in our system. Please contact administrator.",
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    // User found, try to authenticate
     const authResult = await authenticateExistingUser(
       pb,
       existingUser,
-      userData,
+      userData
     );
     if (!authResult.success) {
       return NextResponse.json(
         { message: authResult.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
-    // Return token and user data
     return NextResponse.json({
       token: authResult.token,
       user: {
@@ -88,7 +78,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("Server error:", err);
     return NextResponse.json(
       {
         message: "Server error",
@@ -97,7 +86,7 @@ export async function POST(request: NextRequest) {
           name: err.name,
         },
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -107,7 +96,6 @@ export async function POST(request: NextRequest) {
  */
 async function exchangeCodeForToken(code: string, redirectUri: string) {
   try {
-    console.log("Exchanging code for tokens with Google...");
     const response = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: {
@@ -123,15 +111,11 @@ async function exchangeCodeForToken(code: string, redirectUri: string) {
     });
 
     if (!response.ok) {
-      console.error("Google token exchange failed:", await response.text());
       return null;
     }
 
-    const tokenData = await response.json();
-    console.log("Token exchange successful, access token received");
-    return tokenData;
-  } catch (error) {
-    console.error("Error exchanging code for token:", error);
+    return await response.json();
+  } catch {
     return null;
   }
 }
@@ -141,7 +125,6 @@ async function exchangeCodeForToken(code: string, redirectUri: string) {
  */
 async function fetchGoogleUserInfo(accessToken: string) {
   try {
-    console.log("Fetching user info from Google...");
     const response = await fetch(GOOGLE_USER_INFO_URL, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -149,18 +132,11 @@ async function fetchGoogleUserInfo(accessToken: string) {
     });
 
     if (!response.ok) {
-      console.error("Google user info fetch failed:", await response.text());
       return null;
     }
 
-    const userData = await response.json();
-    console.log("User info fetched successfully:", {
-      email: userData.email,
-      name: userData.name,
-    });
-    return userData;
-  } catch (error) {
-    console.error("Error fetching user info:", error);
+    return await response.json();
+  } catch {
     return null;
   }
 }
@@ -170,20 +146,16 @@ async function fetchGoogleUserInfo(accessToken: string) {
  */
 async function findUserByEmail(pb: PocketBase, email: string) {
   try {
-    console.log("Checking if user exists in PocketBase by email...");
     const result = await pb.collection("users").getList(1, 1, {
       filter: `email='${email}'`,
     });
 
     if (result.items.length > 0) {
-      console.log("User found by email:", result.items[0].id);
       return result.items[0];
     }
 
-    console.log("User not found by email");
     return null;
-  } catch (error) {
-    console.error("Error searching for user:", error);
+  } catch {
     return null;
   }
 }
@@ -199,27 +171,23 @@ async function authenticateExistingUser(
     name: string;
     picture?: string;
     id: string;
-  },
+  }
 ) {
-  console.log("User exists, trying to authenticate...");
-
   try {
-    // Check if user ID is valid
     if (!user.id || typeof user.id !== "string") {
-      console.error("Invalid user ID:", user.id);
       return {
         success: false,
         message: "Invalid user ID",
       };
     }
 
-    // Create a custom token for the user
     const token = await createCustomToken(user.id as string, googleData.email);
 
-    // Set the token in PocketBase auth store
     pb.authStore.save(token, {
       id: user.id as string,
-      collectionId: user.collectionId as string,
+      email: googleData.email,
+      name: googleData.name,
+      collectionId: "users",
       collectionName: "users",
       ...user,
     });
@@ -228,8 +196,7 @@ async function authenticateExistingUser(
       success: true,
       token: pb.authStore.token,
     };
-  } catch (error: unknown) {
-    console.error("Error authenticating existing user:", error);
+  } catch {
     return {
       success: false,
       message: "Failed to authenticate existing user",
@@ -250,7 +217,7 @@ async function createCustomToken(userId: string, email: string) {
   const payload = {
     id: userId,
     email: email,
-    exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+    exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     type: "auth",
   };
 
@@ -262,7 +229,6 @@ async function createCustomToken(userId: string, email: string) {
     .toString("base64")
     .replace(/=+$/, "");
 
-  // In production, use crypto to properly sign the token
   const signature = Buffer.from(`${encodedHeader}.${encodedPayload}`)
     .toString("base64")
     .replace(/=+$/, "");

@@ -13,13 +13,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { CarFilters, type FilterValues } from "@/components/car-filters";
+import { CarFilters } from "@/components/car-filters";
 import debounce from "lodash/debounce";
 import { idrFormat } from "@/utils/idr-format";
 import { CarForm } from "@/components/car-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FilterValues } from "@/types/car";
+import { QrCode } from "lucide-react";
+import { CarQRCode } from "@/components/car/car-qr-code";
+import { pb } from "@/lib/pocketbase";
 
 type ModalType = "create" | "edit" | "delete" | null;
 
@@ -34,11 +38,51 @@ const DashboardPage = () => {
   const [bodyTypes, setBodyTypes] = useState<BodyType[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [pageLoaded, setPageLoaded] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [carForQr, setCarForQr] = useState<Car | null>(null);
 
   const loadCars = useCallback(async () => {
     setLoading(true);
     try {
-      const carData = await CarApi.getCars({ search, filters });
+      const filterRules: string[] = [];
+
+      if (search) {
+        filterRules.push(`model.name ~ "${search}"`);
+      }
+
+      if (filters?.brand) {
+        filterRules.push(`model.brand = "${filters.brand}"`);
+      }
+
+      if (filters?.bodyType) {
+        filterRules.push(`model.body_type = "${filters.bodyType}"`);
+      }
+
+      if (filters?.transmission) {
+        filterRules.push(`transmission = "${filters.transmission}"`);
+      }
+
+      if (filters?.minPrice) {
+        filterRules.push(`sell_price >= ${filters.minPrice}`);
+      }
+
+      if (filters?.maxPrice) {
+        filterRules.push(`sell_price <= ${filters.maxPrice}`);
+      }
+
+      if (filters?.soldStatus === "sold") {
+        filterRules.push(`is_sold = true`);
+      } else if (filters?.soldStatus === "available") {
+        filterRules.push(`is_sold = false`);
+      }
+      // If soldStatus is "all" or undefined, we don't add a filter, showing all cars
+
+      const carData = await pb.collection("cars").getFullList<Car>({
+        sort: "-created",
+        expand: "model.brand,model.body_type",
+        filter: filterRules.length > 0 ? filterRules.join(" && ") : undefined,
+        $autoCancel: false,
+      });
       setCars(carData);
     } catch (error) {
       console.error("Error loading cars:", error);
@@ -92,13 +136,16 @@ const DashboardPage = () => {
     }
   }, [toast]);
 
+  // Gunakan useEffect dengan dependensi kosong untuk inisialisasi
   useEffect(() => {
     loadMasterData();
     loadCars();
+
     return () => {
       debouncedLoadCars.cancel();
     };
-  }, [loadMasterData, loadCars, debouncedLoadCars]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hapus dependensi untuk menghindari loop
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -116,8 +163,14 @@ const DashboardPage = () => {
           description: "New car has been added successfully.",
         });
       }
-      await loadCars();
+
+      // Tutup modal sebelum memuat ulang data
       closeModal();
+
+      // Muat ulang data setelah modal ditutup
+      setTimeout(() => {
+        loadCars();
+      }, 100);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -125,6 +178,7 @@ const DashboardPage = () => {
         title: "Error",
         description: "Failed to save car data.",
       });
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -136,8 +190,15 @@ const DashboardPage = () => {
     setLoading(true);
     try {
       await CarApi.deleteCar(selectedCar.id);
-      await loadCars();
+
+      // Tutup modal sebelum memuat ulang data
       closeModal();
+
+      // Muat ulang data setelah modal ditutup
+      setTimeout(() => {
+        loadCars();
+      }, 100);
+
       toast({
         title: "Success",
         description: "Car has been deleted successfully.",
@@ -149,6 +210,7 @@ const DashboardPage = () => {
         description:
           error instanceof Error ? error.message : "Failed to delete car",
       });
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -163,6 +225,11 @@ const DashboardPage = () => {
     setModalType(null);
     setSelectedCar(null);
   }, []);
+
+  const openQrModal = (car: Car) => {
+    setCarForQr(car);
+    setQrModalOpen(true);
+  };
 
   const renderCarForm = () => {
     if (modalType === "create") {
@@ -281,6 +348,12 @@ const DashboardPage = () => {
                     </th>
                     <th
                       scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                    <th
+                      scope="col"
                       className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Actions
@@ -290,7 +363,7 @@ const DashboardPage = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {cars.length === 0 && !loading ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
+                      <td colSpan={6} className="px-6 py-12 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <svg
                             className="w-16 h-16 text-gray-300 mb-4"
@@ -324,7 +397,9 @@ const DashboardPage = () => {
                     cars.map((car) => (
                       <tr
                         key={car.id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className={`hover:bg-gray-50 transition-colors ${
+                          car.is_sold ? "bg-gray-50" : ""
+                        }`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {car.expand?.model?.expand?.brand?.name || "—"}
@@ -343,6 +418,23 @@ const DashboardPage = () => {
                             {car.transmission}
                           </Badge>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {car.is_sold ? (
+                            <Badge
+                              variant="outline"
+                              className="capitalize bg-red-50 text-red-700 border-red-200"
+                            >
+                              Sold
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="capitalize bg-green-50 text-green-700 border-green-200"
+                            >
+                              Available
+                            </Badge>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <Button
@@ -360,6 +452,15 @@ const DashboardPage = () => {
                               className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
                             >
                               Delete
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openQrModal(car)}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <QrCode className="h-4 w-4 mr-1" />
+                              QR Code
                             </Button>
                           </div>
                         </td>
@@ -463,6 +564,14 @@ const DashboardPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {carForQr && (
+        <CarQRCode
+          car={carForQr}
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

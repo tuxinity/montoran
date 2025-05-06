@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,79 +20,250 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import CarApi from "@/lib/car-api";
+import { Plus, Loader2 } from "lucide-react";
 import { Sale } from "@/types/sales";
-import { Car } from "@/types/car";
+import AuthApi from "@/lib/auth-api";
+import { useToast } from "@/hooks/use-toast";
+import { useAvailableCars } from "@/hooks/use-cars";
+import { useCustomers, useCreateCustomer } from "@/hooks/use-customers";
 
 interface NewSaleDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Sale, "id">) => void;
+  onSubmit: (data: Omit<Sale, "id">) => Promise<void>;
+  preselectedCarId?: string;
 }
 
 export const NewSaleDialog = ({
   open,
   onClose,
   onSubmit,
+  preselectedCarId,
 }: NewSaleDialogProps) => {
+  const { toast } = useToast();
+  const [customerId, setCustomerId] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [carId, setCarId] = useState("");
   const [price, setPrice] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [status, setStatus] = useState("completed");
-  const [notes, setNotes] = useState("");
-  const [cars, setCars] = useState<Car[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState("");
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
+  const [customerErrors, setCustomerErrors] = useState({
+    name: "",
+    phone: "",
+  });
 
-  useEffect(() => {
-    if (open) {
-      loadCars();
-    }
-  }, [open]);
+  // Use React Query hooks
+  const { data: cars = [], isLoading: carsLoading } = useAvailableCars();
 
-  const loadCars = async () => {
-    setLoading(true);
-    try {
-      const carsData = await CarApi.getCars({
-        filters: {
-          soldStatus: "available",
-        },
-      });
-      setCars(carsData);
-    } catch (error) {
-      console.error("Error loading cars:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: customers = [], isLoading: customersLoading } = useCustomers();
 
-  const handleSubmit = () => {
-    if (!customerName || !carId || !price) {
-      alert("Please fill all required fields");
-      return;
-    }
+  const createCustomerMutation = useCreateCustomer();
 
-    const saleData: Omit<Sale, "id"> = {
-      date: new Date().toISOString().slice(0, 10),
-      customerName,
-      car: carId,
-      price: parseFloat(price),
-      paymentMethod,
-      status: status as "completed" | "pending" | "cancelled",
-      notes: notes || undefined,
-    };
-
-    onSubmit(saleData);
-    resetForm();
-  };
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
+    setCustomerId("");
     setCustomerName("");
     setCarId("");
     setPrice("");
     setPaymentMethod("Cash");
-    setStatus("completed");
-    setNotes("");
+    setDescription("");
+    setIsAddingCustomer(false);
+    setNewCustomer({
+      name: "",
+      phone: "",
+      email: "",
+      address: "",
+    });
+    setCustomerErrors({
+      name: "",
+      phone: "",
+    });
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open, resetForm]);
+
+  useEffect(() => {
+    if (preselectedCarId) {
+      setCarId(preselectedCarId);
+    }
+  }, [preselectedCarId]);
+
+  const handleCarSelect = (carId: string) => {
+    setCarId(carId);
+    const selectedCar = cars.find((car) => car.id === carId);
+    if (selectedCar) {
+      setPrice(selectedCar.sell_price.toString());
+    }
+  };
+
+  const handleCustomerSelect = (value: string) => {
+    if (value === "add-new") {
+      setIsAddingCustomer(true);
+      setCustomerId("");
+      setCustomerName("");
+    } else {
+      setCustomerId(value);
+      const selectedCustomer = customers.find(
+        (customer) => customer.id === value
+      );
+      if (selectedCustomer) {
+        setCustomerName(selectedCustomer.name);
+      }
+    }
+  };
+
+  const validatePhone = (phone: string) => {
+    // Check if it's a valid Indonesian phone number
+    // Format: 0 followed by 8-13 digits
+    const isValid = /^0[0-9]{8,13}$/.test(phone);
+
+    if (!isValid) {
+      return "Please enter a valid phone number (e.g., 08123456789)";
+    }
+    return "";
+  };
+
+  const handleAddCustomer = async () => {
+    // Validate customer data
+    const nameError = !newCustomer.name ? "Name is required" : "";
+    const phoneError = !newCustomer.phone
+      ? "Phone is required"
+      : validatePhone(newCustomer.phone);
+
+    setCustomerErrors({
+      name: nameError,
+      phone: phoneError,
+    });
+
+    if (nameError || phoneError) {
+      return;
+    }
+
+    try {
+      // Use the mutation to create a customer
+      const customer = await createCustomerMutation.mutateAsync(newCustomer);
+
+      // Update local state
+      setCustomerId(customer.id);
+      setCustomerName(customer.name);
+      setIsAddingCustomer(false);
+      setNewCustomer({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+      });
+
+      toast({
+        title: "Success",
+        description: "Customer added successfully",
+      });
+    } catch (error: Error | unknown) {
+      if (
+        error instanceof Error &&
+        error.message === "Phone number already exists"
+      ) {
+        setCustomerErrors({
+          ...customerErrors,
+          phone: "This phone number is already registered",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to add customer",
+        });
+      }
+    }
+  };
+
+  const formatPrice = (value: string) => {
+    // Remove all non-digit characters
+    const numericValue = value.replace(/\D/g, "");
+
+    // Format with commas
+    const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    return formattedValue;
+  };
+
+  const parsePrice = (value: string) => {
+    return parseFloat(value.replace(/,/g, ""));
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatPrice(e.target.value);
+    setPrice(formattedValue);
+  };
+
+  const handleSubmit = () => {
+    if (!customerId && !customerName) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select or add a customer",
+      });
+      return;
+    }
+
+    if (!carId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select a car",
+      });
+      return;
+    }
+
+    if (!price) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter price",
+      });
+      return;
+    }
+
+    if (!AuthApi.isLoggedIn()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "User not authenticated",
+      });
+      return;
+    }
+
+    const currentUser = AuthApi.getCurrentUser()?.id;
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to get user information",
+      });
+      return;
+    }
+
+    const saleData: Omit<Sale, "id"> = {
+      customer_name: customerName,
+      car: carId,
+      price: parsePrice(price),
+      payment_method: paymentMethod,
+      description: description || undefined,
+      created_by: currentUser,
+    };
+
+    onSubmit(saleData);
+    resetForm();
   };
 
   return (
@@ -106,29 +276,145 @@ export const NewSaleDialog = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="customerName" className="text-right">
-              Customer
-            </Label>
-            <Input
-              id="customerName"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="col-span-3"
-              placeholder="Customer name"
-            />
-          </div>
+          {!isAddingCustomer ? (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer" className="text-right">
+                Customer
+              </Label>
+              <Select value={customerId} onValueChange={handleCustomerSelect}>
+                <SelectTrigger className="col-span-3" id="customer">
+                  <SelectValue placeholder="Select a customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customersLoading ? (
+                    <SelectItem value="loading" disabled>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading customers...
+                    </SelectItem>
+                  ) : customers.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      No customers available
+                    </SelectItem>
+                  ) : (
+                    <>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} -{" "}
+                          {customer.phone ? `+62${customer.phone}` : "No Phone"}
+                        </SelectItem>
+                      ))}
+                      <SelectItem
+                        value="add-new"
+                        className="text-primary font-medium"
+                      >
+                        <div className="flex items-center">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add New Customer
+                        </div>
+                      </SelectItem>
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Add New Customer</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingCustomer(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="newCustomerName">Name</Label>
+                  <Input
+                    id="newCustomerName"
+                    value={newCustomer.name}
+                    onChange={(e) =>
+                      setNewCustomer({ ...newCustomer, name: e.target.value })
+                    }
+                    placeholder="Customer name"
+                    className={customerErrors.name ? "border-red-500" : ""}
+                  />
+                  {customerErrors.name && (
+                    <p className="text-sm text-red-500">
+                      {customerErrors.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="newCustomerPhone">Phone</Label>
+                  <Input
+                    id="newCustomerPhone"
+                    value={newCustomer.phone}
+                    onChange={(e) => {
+                      // Only allow numbers
+                      const value = e.target.value.replace(/\D/g, "");
+                      setNewCustomer({ ...newCustomer, phone: value });
+                    }}
+                    placeholder="08123456789"
+                    className={customerErrors.phone ? "border-red-500" : ""}
+                  />
+                  {customerErrors.phone && (
+                    <p className="text-sm text-red-500">
+                      {customerErrors.phone}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="newCustomerEmail">Email (Optional)</Label>
+                  <Input
+                    id="newCustomerEmail"
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) =>
+                      setNewCustomer({ ...newCustomer, email: e.target.value })
+                    }
+                    placeholder="customer@example.com"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="newCustomerAddress">Address (Optional)</Label>
+                  <Input
+                    id="newCustomerAddress"
+                    value={newCustomer.address}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        address: e.target.value,
+                      })
+                    }
+                    placeholder="Customer address"
+                  />
+                </div>
+
+                <Button onClick={handleAddCustomer} className="w-full">
+                  Add Customer
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="car" className="text-right">
               Car
             </Label>
-            <Select value={carId} onValueChange={setCarId}>
+            <Select value={carId} onValueChange={handleCarSelect}>
               <SelectTrigger className="col-span-3" id="car">
                 <SelectValue placeholder="Select a car" />
               </SelectTrigger>
               <SelectContent>
-                {loading ? (
+                {carsLoading ? (
                   <SelectItem value="loading" disabled>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading cars...
                   </SelectItem>
                 ) : cars.length === 0 ? (
@@ -139,7 +425,9 @@ export const NewSaleDialog = ({
                   cars.map((car) => (
                     <SelectItem key={car.id} value={car.id}>
                       {car.expand?.model.expand?.brand.name}{" "}
-                      {car.expand?.model.name} - {car.year}
+                      {car.expand?.model.name} - {car.year} -{" "}
+                      {car.expand?.model.expand?.body_type.name} - IDR{" "}
+                      {car.sell_price.toLocaleString()}
                     </SelectItem>
                   ))
                 )}
@@ -150,14 +438,18 @@ export const NewSaleDialog = ({
             <Label htmlFor="price" className="text-right">
               Price
             </Label>
-            <Input
-              id="price"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="col-span-3"
-              placeholder="Sale price"
-            />
+            <div className="col-span-3 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                IDR
+              </span>
+              <Input
+                id="price"
+                value={price}
+                onChange={handlePriceChange}
+                className="pl-12"
+                placeholder="0"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="payment" className="text-right">
@@ -171,36 +463,19 @@ export const NewSaleDialog = ({
                 <SelectItem value="Cash">Cash</SelectItem>
                 <SelectItem value="Credit">Credit</SelectItem>
                 <SelectItem value="Transfer">Bank Transfer</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
-              Status
-            </Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="col-span-3" id="status">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Tambahkan input untuk notes */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="notes" className="text-right pt-2">
-              Notes
+            <Label htmlFor="description" className="text-right pt-2">
+              Description
             </Label>
             <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="col-span-3"
-              placeholder="Optional notes about this sale"
+              placeholder="Add description about this sale"
               rows={3}
             />
           </div>

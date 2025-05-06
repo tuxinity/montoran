@@ -8,6 +8,7 @@ export type SalesFilter = {
   paymentMethod?: string;
   dateFrom?: string;
   dateTo?: string;
+  createdBy?: string;
 };
 
 export type SortConfig = {
@@ -24,11 +25,11 @@ const SalesApi = {
     sort?: SortConfig
   ): Promise<Sale[]> => {
     try {
-      const filterRules: string[] = [];
+      const filterRules: string[] = ['deleted_at = ""'];
 
       if (filters?.search) {
         filterRules.push(
-          `(customerName ~ "${filters.search}" || id ~ "${filters.search}")`
+          `(customer_name ~ "${filters.search}" || id ~ "${filters.search}")`
         );
       }
 
@@ -37,25 +38,29 @@ const SalesApi = {
       }
 
       if (filters?.paymentMethod && filters.paymentMethod !== "all") {
-        filterRules.push(`paymentMethod = "${filters.paymentMethod}"`);
+        filterRules.push(`payment_method = "${filters.paymentMethod}"`);
       }
 
       if (filters?.dateFrom) {
-        filterRules.push(`date >= "${filters.dateFrom}"`);
+        filterRules.push(`created >= "${filters.dateFrom}"`);
       }
 
       if (filters?.dateTo) {
-        filterRules.push(`date <= "${filters.dateTo}"`);
+        filterRules.push(`created <= "${filters.dateTo}"`);
+      }
+
+      if (filters?.createdBy && filters.createdBy !== "all") {
+        filterRules.push(`created_by = "${filters.createdBy}"`);
       }
 
       const sortParam = sort
         ? `${sort.direction === "desc" ? "-" : ""}${sort.field}`
-        : "-date";
+        : "-created";
 
       const records = await pb.collection(COLLECTIONS.SALES).getFullList<Sale>({
         sort: sortParam,
-        filter: filterRules.length > 0 ? filterRules.join(" && ") : undefined,
-        expand: "car,salesPerson",
+        filter: filterRules.join(" && "),
+        expand: "car,car.model,car.model.brand,created_by",
         $autoCancel: false,
       });
 
@@ -144,33 +149,54 @@ const SalesApi = {
 
   getSalesSummary: async (): Promise<{
     totalSales: number;
-    completedSales: number;
-    pendingSales: number;
     totalRevenue: number;
   }> => {
     try {
       const allSales = await pb
         .collection(COLLECTIONS.SALES)
-        .getFullList<Sale>();
+        .getFullList<Sale>({
+          filter: 'deleted_at = ""',
+          $autoCancel: false,
+        });
 
-      const completedSales = allSales.filter(
-        (sale) => sale.status === "completed"
-      );
-      const pendingSales = allSales.filter((sale) => sale.status === "pending");
-
-      const totalRevenue = completedSales.reduce(
-        (sum, sale) => sum + sale.price,
-        0
+      // Calculate total revenue and round down to the nearest integer
+      const totalRevenue = Math.floor(
+        allSales.reduce((sum, sale) => sum + sale.price, 0)
       );
 
       return {
         totalSales: allSales.length,
-        completedSales: completedSales.length,
-        pendingSales: pendingSales.length,
         totalRevenue,
       };
     } catch (error) {
       console.error("Error fetching sales summary:", error);
+      throw error;
+    }
+  },
+
+  softDeleteSale: async (
+    id: string,
+    userId: string,
+    notes: string
+  ): Promise<void> => {
+    try {
+      const sale = await pb.collection(COLLECTIONS.SALES).getOne<Sale>(id, {
+        expand: "car",
+      });
+
+      await pb.collection(COLLECTIONS.SALES).update(id, {
+        deleted_by: userId,
+        deleted_at: new Date().toISOString(),
+        notes: notes,
+      });
+
+      if (sale.car) {
+        await pb.collection(COLLECTIONS.CARS).update(sale.car, {
+          is_sold: false,
+        });
+      }
+    } catch (error) {
+      console.error(`Error soft deleting sale ${id}:`, error);
       throw error;
     }
   },

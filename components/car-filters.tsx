@@ -29,7 +29,7 @@ const PRICE_RANGES = [
 ] as const;
 
 const TRANSMISSION_OPTIONS = [
-  { label: "Automatic", value: "AT" },
+  { label: "Otomatis", value: "AT" },
   { label: "Manual", value: "MT" },
 ] as const;
 
@@ -44,13 +44,13 @@ const TransmissionSelect = memo(function TransmissionSelect({
     <Select
       value={value ?? "all"}
       onValueChange={onChange}
-      aria-label="Transmission filter"
+      aria-label="Filter transmisi"
     >
       <SelectTrigger>
-        <SelectValue placeholder="Transmission" />
+        <SelectValue placeholder="Transmisi" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All Transmissions</SelectItem>
+        <SelectItem value="all">Semua Transmisi</SelectItem>
         {TRANSMISSION_OPTIONS.map(({ label, value }) => (
           <SelectItem key={value} value={value}>
             {label}
@@ -72,13 +72,13 @@ const PriceSelect = memo(function PriceSelect({
     <Select
       value={value ?? "all"}
       onValueChange={onChange}
-      aria-label="Price range filter"
+      aria-label="Filter rentang harga"
     >
       <SelectTrigger>
-        <SelectValue placeholder="Price Range" />
+        <SelectValue placeholder="Rentang Harga" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">Any Price</SelectItem>
+        <SelectItem value="all">Semua Harga</SelectItem>
         {PRICE_RANGES.map(({ label, value }) => (
           <SelectItem key={value} value={value}>
             {label}
@@ -116,7 +116,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
 
   const debouncedSearch = useMemo(
     () => debounce((value: string) => onSearch(value), 300),
-    [onSearch],
+    [onSearch]
   );
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
       setSearchQuery(value);
       debouncedSearch(value);
     },
-    [debouncedSearch],
+    [debouncedSearch]
   );
 
   const handleFilterChange = useCallback(
@@ -140,7 +140,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
       setFilters(newFilters);
       onFilterChange(newFilters);
     },
-    [filters, onFilterChange],
+    [filters, onFilterChange]
   );
 
   const resetFilters = useCallback(() => {
@@ -152,13 +152,13 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
 
   const hasActiveFilters = useMemo(
     () => searchQuery || Object.values(filters).some(Boolean),
-    [searchQuery, filters],
+    [searchQuery, filters]
   );
 
   const brandsArray = useMemo(() => Array.from(brands.values()), [brands]);
   const bodyTypesArray = useMemo(
     () => Array.from(bodyTypes.values()),
-    [bodyTypes],
+    [bodyTypes]
   );
 
   return (
@@ -170,17 +170,17 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
             aria-hidden="true"
           />
           <Input
-            placeholder="Search cars..."
+            placeholder="Cari mobil..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-9"
-            aria-label="Search cars"
+            aria-label="Cari mobil"
           />
           {searchQuery && (
             <button
               onClick={() => handleSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
+              aria-label="Hapus pencarian"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -190,7 +190,9 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           variant={isFiltersVisible ? "secondary" : "outline"}
           size="icon"
           onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-          aria-label={isFiltersVisible ? "Hide filters" : "Show filters"}
+          aria-label={
+            isFiltersVisible ? "Sembunyikan filter" : "Tampilkan filter"
+          }
           aria-expanded={isFiltersVisible}
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -200,7 +202,7 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
             variant="ghost"
             size="sm"
             onClick={resetFilters}
-            aria-label="Reset all filters"
+            aria-label="Reset semua filter"
           >
             Reset
           </Button>
@@ -212,13 +214,13 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           <Select
             value={filters.brand ?? "all"}
             onValueChange={(value) => handleFilterChange("brand", value)}
-            aria-label="Brand filter"
+            aria-label="Filter merek"
           >
             <SelectTrigger>
-              <SelectValue placeholder="Brand" />
+              <SelectValue placeholder="Merek" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Brands</SelectItem>
+              <SelectItem value="all">Semua Merek</SelectItem>
               {brandsArray.map((brand) => (
                 <SelectItem key={brand.id} value={brand.id}>
                   {brand.name}
@@ -230,13 +232,13 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           <Select
             value={filters.bodyType ?? "all"}
             onValueChange={(value) => handleFilterChange("bodyType", value)}
-            aria-label="Body type filter"
+            aria-label="Filter tipe body"
           >
             <SelectTrigger>
-              <SelectValue placeholder="Body Type" />
+              <SelectValue placeholder="Tipe Body" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="all">Semua Tipe</SelectItem>
               {bodyTypesArray.map((type) => (
                 <SelectItem key={type.id} value={type.id}>
                   {type.name}
@@ -248,15 +250,15 @@ export function CarFilters({ onSearch, onFilterChange }: CarFiltersProps) {
           <Select
             value={filters.soldStatus ?? "all"}
             onValueChange={(value) => handleFilterChange("soldStatus", value)}
-            aria-label="Sold status filter"
+            aria-label="Filter status"
           >
             <SelectTrigger>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="available">Available</SelectItem>
-              <SelectItem value="sold">Sold Out</SelectItem>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="available">Tersedia</SelectItem>
+              <SelectItem value="sold">Terjual</SelectItem>
             </SelectContent>
           </Select>
 

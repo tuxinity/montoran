@@ -1,5 +1,7 @@
 import { Car, Model, Brand, BodyType, FilterValues } from "@/types/car";
 import type PocketBase from "pocketbase";
+import { AuthModel } from "pocketbase";
+import { AuthResponse } from "./auth";
 
 export interface GetCarsOptions {
   search?: string;
@@ -101,19 +103,19 @@ export interface ICarAPI {
 
   updateCar: (
     id: string,
-    data: FormData | Partial<CreateCarRequest>,
+    data: FormData | Partial<CreateCarRequest>
   ) => Promise<Car>;
   updateModel: (
     id: string,
-    data: Partial<CreateModelRequest>,
+    data: Partial<CreateModelRequest>
   ) => Promise<Model>;
   updateBrand: (
     id: string,
-    data: Partial<CreateBrandRequest>,
+    data: Partial<CreateBrandRequest>
   ) => Promise<Brand>;
   updateBodyType: (
     id: string,
-    data: Partial<CreateBodyTypeRequest>,
+    data: Partial<CreateBodyTypeRequest>
   ) => Promise<BodyType>;
 
   deleteCar: (id: string) => Promise<boolean>;
@@ -125,7 +127,7 @@ export interface ICarAPI {
   isLoggedIn: () => boolean;
   login: (
     email: string,
-    password: string,
+    password: string
   ) => Promise<{
     token: string;
     user: {
@@ -141,7 +143,7 @@ export interface IAuthAPI {
   isLoggedIn: () => boolean;
   login: (
     email: string,
-    password: string,
+    password: string
   ) => Promise<{
     token: string;
     user: {
@@ -154,7 +156,7 @@ export interface IAuthAPI {
     provider: string,
     code: string,
     state: string,
-    redirectUrl: string,
+    redirectUrl: string
   ) => Promise<{
     token: string;
     user: {
@@ -163,4 +165,13 @@ export interface IAuthAPI {
     };
   }>;
   logout: () => void;
+  getCurrentUser: () => {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
+  getPocketBase: () => PocketBase;
+  onAuthStateChange: (
+    callback: (token: string, model: AuthModel | null) => void
+  ) => void;
 }

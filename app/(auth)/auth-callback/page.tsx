@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
+import AuthApi from "@/lib/auth-api";
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -17,7 +18,6 @@ function AuthCallbackContent() {
       if (isLoading) {
         setError("Authentication timed out. Please try again.");
         setIsLoading(false);
-        console.log("Timeout triggered after 30 seconds");
       }
     }, 30000);
 
@@ -38,13 +38,11 @@ function AuthCallbackContent() {
         const code = searchParams?.get("code");
 
         if (!code) {
-          console.log("No code found in URL");
           setError("Authentication failed. No authorization code received.");
           setIsLoading(false);
           return;
         }
 
-        console.log(`Code received from Google`);
         setLoadingText("Verifying with Google...");
 
         const response = await fetch("/api/auth/google-callback", {
@@ -61,8 +59,6 @@ function AuthCallbackContent() {
         const data = await response.json();
 
         if (!response.ok) {
-          console.log(`API error: ${JSON.stringify(data)}`);
-
           if (
             response.status === 404 &&
             data.message === "User not registered"
@@ -70,25 +66,32 @@ function AuthCallbackContent() {
             setError("Account not registered");
             setErrorDetails(
               data.details ||
-                "This email is not registered in our system. Please contact administrator.",
+                "This email is not registered in our system. Please contact administrator."
             );
           } else {
             setError("Authentication failed");
             setErrorDetails(
-              data.message || "An error occurred during authentication.",
+              data.message || "An error occurred during authentication."
             );
           }
           setIsLoading(false);
           return;
         }
 
-        console.log("Authentication successful, storing token");
         Cookies.set("pb_auth", data.token, { expires: 7 });
 
-        console.log("Redirecting to dashboard");
+        const pb = AuthApi.getPocketBase();
+        const userData = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name || data.user.email.split("@")[0],
+          collectionId: "users",
+          collectionName: "users",
+        };
+
+        pb.authStore.save(data.token, userData);
         router.push("/dashboard");
-      } catch (error) {
-        console.error("Error during authentication:", error);
+      } catch {
         setError("Authentication failed");
         setErrorDetails("An unexpected error occurred. Please try again.");
         setIsLoading(false);

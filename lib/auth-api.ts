@@ -7,6 +7,25 @@ const AuthApi: IAuthAPI = {
     return pb.authStore.isValid;
   },
 
+  getCurrentUser: () => {
+    const user = pb.authStore.model;
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || user.username || "User",
+    };
+  },
+
+  getPocketBase: () => {
+    return pb;
+  },
+
+  onAuthStateChange: (callback) => {
+    return pb.authStore.onChange(callback);
+  },
+
   login: async (
     email: string,
     password: string
@@ -27,7 +46,6 @@ const AuthApi: IAuthAPI = {
         },
       };
     } catch (error) {
-      console.error("Login failed:", error);
       throw error;
     }
   },
@@ -63,7 +81,6 @@ const AuthApi: IAuthAPI = {
         `&redirectUrl=${encodeURIComponent(redirectUrl)}`
       );
     } catch (error) {
-      console.error("Google login preparation failed:", error);
       throw error;
     }
   },
@@ -89,10 +106,10 @@ const AuthApi: IAuthAPI = {
         user: {
           id: authData.record.id,
           email: authData.record.email,
+          name: authData.record.name || "",
         },
       };
     } catch (error) {
-      console.error("OAuth login failed:", error);
       throw error;
     }
   },
