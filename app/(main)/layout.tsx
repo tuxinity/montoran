@@ -1,14 +1,7 @@
-import NavbarLayout from "@/components/layout/navbar-layout";
-import FooterLayout from "@/components/layout/footer-layout";
+import { MainLayoutClient } from "./main-layout-client";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <>
-      <NavbarLayout />
-      <main className="flex-1">{children}</main>
-      <FooterLayout />
-    </>
-  );
+  return <MainLayoutClient>{children}</MainLayoutClient>;
 };
 
 export default MainLayout;

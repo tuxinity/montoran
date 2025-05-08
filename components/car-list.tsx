@@ -6,6 +6,7 @@ import { CarCard } from "./card";
 import type { Car, FilterValues } from "@/types/car";
 import { CarFilters } from "@/components/car-filters";
 import { CarListSkeleton } from "./skeleton/car-list-skeleton";
+import { useTranslation } from "react-i18next";
 
 interface CarListProps {
   className?: string;
@@ -13,6 +14,7 @@ interface CarListProps {
 }
 
 export function CarList({ initialCars, className }: CarListProps) {
+  const { t } = useTranslation();
   const [cars, setCars] = useState<Car[]>(initialCars);
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({});
@@ -95,18 +97,18 @@ export function CarList({ initialCars, className }: CarListProps) {
               </svg>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Tidak Ada Mobil Tersedia
+              {t("car.list.empty")}
             </h3>
             <p className="text-gray-500 max-w-md mx-auto mb-6">
               {search || Object.keys(filters).length > 0
-                ? "Coba ubah filter pencarian Anda atau kunjungi kembali nanti untuk melihat koleksi terbaru kami."
-                : "Semua mobil kami telah terjual. Silakan kunjungi kembali nanti untuk melihat koleksi terbaru kami."}
+                ? t("car.list.empty_filtered")
+                : t("car.list.empty_all")}
             </p>
             <a
               href="/contact"
               className="inline-flex items-center justify-center rounded-md bg-primary text-white px-6 py-3 text-sm font-medium shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              Hubungi Kami
+              {t("car.list.contact")}
             </a>
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,55 +9,58 @@ import { ImageGallery } from "./ui/image-gallery";
 import { idrFormat } from "@/utils/idr-format";
 import { Calendar, Users, Briefcase, Gauge, ArrowUp } from "lucide-react";
 import CarApi from "@/lib/car-api";
-
-// const SpecificationGrid = ({ specs }: { specs: Car["specs"] }) => (
-//   <div className="grid grid-cols-3 gap-4">
-//     {Object.entries(specs).map(([key, value]) => (
-//       <div key={key}>
-//         <p className="text-sm text-muted-foreground">
-//           {key.charAt(0).toUpperCase() + key.slice(1)}
-//         </p>
-//         <p className="font-medium">koplek</p>
-//       </div>
-//     ))}
-//   </div>
-// );
+import { useTranslation } from "react-i18next";
 
 interface CarDetailProps {
   data: Car;
 }
 
 export function CarDetail({ data }: CarDetailProps) {
+  const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   const [selectedImage, setSelectedImage] = useState(0);
-  // const [selectedColor, setSelectedColor] = useState(0);
 
   const specs = [
     {
       icon: <Calendar className="w-6 h-6" aria-hidden="true" />,
-      label: "Tahun",
+      label: isMounted ? t("carDetail.specs.year") : "Tahun",
       value: data.year,
     },
     {
       icon: <Users className="w-6 h-6" aria-hidden="true" />,
-      label: "Kapasitas",
+      label: isMounted ? t("carDetail.specs.capacity") : "Kapasitas",
       value: data.expand?.model?.seats || "N/A",
     },
     {
       icon: <Briefcase className="w-6 h-6" aria-hidden="true" />,
-      label: "Bagasi",
+      label: isMounted ? t("carDetail.specs.luggage") : "Bagasi",
       value: data.expand?.model?.bags ? `${data.expand.model.bags}` : "N/A",
     },
     {
       icon: <Gauge className="w-6 h-6" aria-hidden="true" />,
-      label: "Transmisi",
+      label: isMounted ? t("carDetail.specs.transmission") : "Transmisi",
       value: data.transmission,
     },
   ];
 
   const handleWhatsAppClick = () => {
-    const message = encodeURIComponent(
-      `Halo, saya tertarik dengan ${data.expand?.model.name} tahun ${data.year}`,
-    );
+    let message;
+    if (isMounted) {
+      message = encodeURIComponent(
+        t("carDetail.whatsappMessage", {
+          model: data.expand?.model.name,
+          year: data.year,
+        })
+      );
+    } else {
+      message = encodeURIComponent(
+        `Halo, saya tertarik dengan ${data.expand?.model.name} tahun ${data.year}`
+      );
+    }
     const whatsappUrl = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${message}`;
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   };
@@ -70,21 +73,22 @@ export function CarDetail({ data }: CarDetailProps) {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="grid lg:grid-cols-2 gap-8 items-start">
-        {/* Left Column - Car Viewer */}
         <div className="lg:sticky lg:top-6 space-y-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
-          <Link href="/car" prefetch={false} className="inline-block">
+          <Link href="/" prefetch={false} className="inline-block">
             <Button variant="ghost" className="group">
               <ArrowUp
                 className="w-4 h-4 mr-2 rotate-[270deg] transition-transform group-hover:-translate-x-1"
                 aria-hidden="true"
               />
-              Back to Listings
+              {isMounted ? t("carDetail.backToListings") : "Back to Listings"}
             </Button>
           </Link>
 
           {data.is_sold && (
             <div className="bg-red-500 text-white text-center py-2 rounded-md mb-4">
-              <span className="font-bold">THIS CAR HAS BEEN SOLD</span>
+              <span className="font-bold">
+                {isMounted ? t("carDetail.soldOut") : "THIS CAR HAS BEEN SOLD"}
+              </span>
             </div>
           )}
 
@@ -96,7 +100,6 @@ export function CarDetail({ data }: CarDetailProps) {
           />
         </div>
 
-        {/* Right Column - Configuration */}
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold capitalize">{modelName}</h1>
@@ -116,7 +119,8 @@ export function CarDetail({ data }: CarDetailProps) {
               )}
             </div>
             <p className="text-muted-foreground mt-2">
-              Harga Mulai dari {idrFormat(data.sell_price)}
+              {isMounted ? t("carDetail.startingPrice") : "Harga Mulai dari"}{" "}
+              {idrFormat(data.sell_price)}
             </p>
           </div>
 
@@ -139,11 +143,17 @@ export function CarDetail({ data }: CarDetailProps) {
           </div>
 
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold">About This Car</h2>
+            <h2 className="text-lg font-semibold">
+              {isMounted ? t("carDetail.aboutThisCar") : "About This Car"}
+            </h2>
             <div
               className="prose prose-sm max-w-none text-muted-foreground [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-4 [&>h3]:font-medium [&>h3]:mt-4 [&>h3]:mb-2"
               dangerouslySetInnerHTML={{
-                __html: data.description || "No description available.",
+                __html:
+                  data.description ||
+                  (isMounted
+                    ? t("carDetail.noDescription")
+                    : "No description available."),
               }}
             />
           </section>
@@ -151,11 +161,15 @@ export function CarDetail({ data }: CarDetailProps) {
           <Card className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-muted-foreground">Est. Delivery</p>
+                <p className="text-sm text-muted-foreground">
+                  {isMounted ? t("carDetail.estDelivery") : "Est. Delivery"}
+                </p>
                 <p className="font-medium">March 2025</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Total Price</p>
+                <p className="text-sm text-muted-foreground">
+                  {isMounted ? t("carDetail.totalPrice") : "Total Price"}
+                </p>
                 <p className="text-2xl font-bold">
                   {idrFormat(data.sell_price)}
                 </p>
@@ -167,7 +181,7 @@ export function CarDetail({ data }: CarDetailProps) {
               onClick={handleWhatsAppClick}
               disabled={data.is_sold}
             >
-              WhatsApp
+              {isMounted ? t("carDetail.whatsapp") : "WhatsApp"}
               <svg
                 viewBox="0 0 24 24"
                 className="w-5 h-5 ml-2 fill-current transition-transform group-hover:scale-110"

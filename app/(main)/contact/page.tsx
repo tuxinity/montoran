@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { AboutClient } from "./about-client";
+import { ContactClient } from "./contact-client";
 
-export default function About() {
+export default function Contact() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <AboutClient />
+      <ContactClient />
     </Suspense>
   );
 }

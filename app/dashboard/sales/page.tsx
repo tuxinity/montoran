@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DownloadIcon, PlusCircleIcon, SearchIcon, Trash2 } from "lucide-react";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { idrFormat } from "@/utils/idr-format";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,8 +39,7 @@ export default function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [createdByFilter, setCreatedByFilter] = useState<string>("all");
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -99,8 +101,10 @@ export default function SalesDashboard() {
       const filters: SalesFilter = {
         search: search || undefined,
         paymentMethod: paymentFilter !== "all" ? paymentFilter : undefined,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
+        dateFrom: dateRange?.from
+          ? format(dateRange.from, "yyyy-MM-dd")
+          : undefined,
+        dateTo: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
         createdBy: createdByFilter !== "all" ? createdByFilter : undefined,
       };
 
@@ -119,15 +123,7 @@ export default function SalesDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [
-    search,
-    paymentFilter,
-    dateFrom,
-    dateTo,
-    createdByFilter,
-    sortConfig,
-    toast,
-  ]);
+  }, [search, paymentFilter, dateRange, createdByFilter, sortConfig, toast]);
 
   const handleSort = (field: keyof Sale) => {
     setSortConfig((prev) => ({
@@ -140,8 +136,7 @@ export default function SalesDashboard() {
   const resetFilters = () => {
     setSearch("");
     setPaymentFilter("all");
-    setDateFrom("");
-    setDateTo("");
+    setDateRange(undefined);
     setCreatedByFilter("all");
   };
 
@@ -307,7 +302,7 @@ export default function SalesDashboard() {
           <SalesRanking sales={sales} users={users} />
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
               <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -330,23 +325,13 @@ export default function SalesDashboard() {
               </SelectContent>
             </Select>
 
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+            <div className="max-w-sm">
+              <DateRangePicker
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
                 className="w-full"
-                placeholder="From date"
-              />
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full"
-                placeholder="To date"
               />
             </div>
-
             <div className="flex gap-2">
               <Button
                 variant="outline"
