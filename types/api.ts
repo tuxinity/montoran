@@ -1,7 +1,6 @@
 import { Car, Model, Brand, BodyType, FilterValues } from "@/types/car";
 import type PocketBase from "pocketbase";
 import { AuthModel } from "pocketbase";
-import { AuthResponse } from "./auth";
 
 export interface GetCarsOptions {
   search?: string;
@@ -139,6 +138,13 @@ export interface ICarAPI {
   getPocketBase: () => PocketBase;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+}
+
 export interface IAuthAPI {
   isLoggedIn: () => boolean;
   login: (
@@ -165,11 +171,7 @@ export interface IAuthAPI {
     };
   }>;
   logout: () => void;
-  getCurrentUser: () => {
-    id: string;
-    email: string;
-    name: string;
-  } | null;
+  getCurrentUser: () => User | null;
   getPocketBase: () => PocketBase;
   onAuthStateChange: (
     callback: (token: string, model: AuthModel | null) => void

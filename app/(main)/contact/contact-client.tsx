@@ -103,7 +103,7 @@ export function ContactClient() {
                         {t("contact.info.address.title")}
                       </h3>
                       <p className="text-muted-foreground text-sm mt-1">
-                        Jl. Raya Serpong No. 88, Tangerang Selatan, Banten 15310
+                        Jl. Mayjen Hariono No. 103, Mayangan, Probolinggo 67217
                       </p>
                     </div>
                   </div>
@@ -237,7 +237,7 @@ export function ContactClient() {
           <div className="max-w-6xl mx-auto">
             <div className="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-lg">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3965.7366956863!2d106.66839!3d-6.2973!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMTcnNTAuMyJTIDEwNsKwNDAnMDYuMiJF!5e0!3m2!1sen!2sid!4v1625123456789!5m2!1sen!2sid"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.370969354815!2d113.22056767550035!3d-7.750419676846887!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7adbbdd948bc5%3A0x98bc76cabe206b0b!2sJl.%20Mt.%20Haryono%20No.103%2C%20Mangunharjo%2C%20Kec.%20Mayangan%2C%20Kota%20Probolinggo%2C%20Jawa%20Timur%2067217!5e0!3m2!1sen!2sid!4v1746709613278!5m2!1sen!2sid"
                 width="100%"
                 height="450"
                 style={{ border: 0 }}

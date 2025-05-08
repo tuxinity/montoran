@@ -1,5 +1,3 @@
-import Cookies from "js-cookie";
-import { pb } from "./pocketbase";
 import { COLLECTIONS } from "./constants";
 import { ClientResponseError } from "pocketbase";
 import type { Car, Model, Brand, BodyType } from "@/types/car";
@@ -12,6 +10,7 @@ import type {
   CreateBrandRequest,
   CreateBodyTypeRequest,
 } from "@/types/api";
+import { createPocketBase, getClientPB, pb } from "./pocketbase";
 
 export const CarApi: ICarAPI = {
   getCars: async ({ search, filters }: GetCarsOptions = {}): Promise<Car[]> => {
@@ -276,7 +275,14 @@ export const CarApi: ICarAPI = {
   },
 
   isLoggedIn: (): boolean => {
-    return pb.authStore.isValid;
+    // On the server, we can't reliably check login status
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    // On the client, use the client PocketBase instance
+    const clientPB = getClientPB();
+    return clientPB ? clientPB.authStore.isValid : false;
   },
 
   login: async (
@@ -284,13 +290,22 @@ export const CarApi: ICarAPI = {
     password: string
   ): Promise<{ token: string; user: { id: string; email: string } }> => {
     try {
-      const authData = await pb
+      // Use client-side PocketBase instance
+      const clientPB = getClientPB();
+      if (!clientPB) {
+        throw new Error("Cannot login on server side");
+      }
+
+      const authData = await clientPB
         .collection("users")
         .authWithPassword(email, password);
-      Cookies.set("pb_auth", pb.authStore.token, {
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
+
+      // Set cookie directly with document.cookie (client-side only)
+      if (typeof window !== "undefined") {
+        const secure = process.env.NODE_ENV === "production" ? "Secure;" : "";
+        document.cookie = `pb_auth=${clientPB.authStore.token}; ${secure} SameSite=Strict; Path=/`;
+      }
+
       return {
         token: authData.token,
         user: {
@@ -305,11 +320,36 @@ export const CarApi: ICarAPI = {
   },
 
   logout: () => {
-    pb.authStore.clear();
-    Cookies.remove("pb_auth");
+    // Use client-side PocketBase instance
+    const clientPB = getClientPB();
+    if (!clientPB) {
+      console.warn("Cannot logout on server side");
+      return;
+    }
+
+    clientPB.authStore.clear();
+
+    // Remove cookie directly with document.cookie (client-side only)
+    if (typeof window !== "undefined") {
+      document.cookie = "pb_auth=; Max-Age=0; Path=/";
+    }
   },
 
-  getPocketBase: () => pb,
+  getPocketBase: () => {
+    // Return the appropriate PocketBase instance based on environment
+    if (typeof window === "undefined") {
+      // Server-side: create a new instance
+      return createPocketBase();
+    } else {
+      // Client-side: use the singleton instance
+      const clientPB = getClientPB();
+      if (!clientPB) {
+        // This should not happen in practice, but we need to handle it for TypeScript
+        return createPocketBase(); // Fallback to a new instance
+      }
+      return clientPB;
+    }
+  },
 };
 
 async function createCarFromFormData(formData: FormData): Promise<Car> {

@@ -1,27 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import "../i18n/i18n"; // Import the i18n configuration
+import { useEffect } from "react";
+import i18n from "../i18n/i18n"; // Import the i18n configuration
 
 interface I18nProviderProps {
   children: React.ReactNode;
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  // Gunakan state untuk menandai bahwa komponen telah di-mount di client
-  const [isMounted, setIsMounted] = useState(false);
-
   useEffect(() => {
-    // Tandai bahwa komponen telah di-mount di client
-    setIsMounted(true);
+    // After initial render, we can safely apply the user's language preference
+    // This happens after hydration, so it won't cause hydration mismatches
+    if (typeof window !== "undefined") {
+      const savedLang = localStorage.getItem("i18nextLng");
+      if (savedLang && i18n.language !== savedLang) {
+        i18n.changeLanguage(savedLang);
+      }
+    }
   }, []);
 
-  // Jika komponen belum di-mount, render placeholder minimal
-  // untuk menghindari perbedaan antara server dan client
-  if (!isMounted) {
-    return <>{children}</>;
-  }
-
-  // Setelah di-mount di client, render children dengan i18n yang sudah diinisialisasi
+  // Always render children to avoid hydration mismatches
+  // Language switching will happen after hydration
   return <>{children}</>;
 }

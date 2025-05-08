@@ -55,16 +55,27 @@ export function CarList({ initialCars, className }: CarListProps) {
   );
 
   useEffect(() => {
+    // Only run this effect on the client side
+    if (typeof window === "undefined") return;
+
     const pb = CarApi.getPocketBase();
+    if (!pb) return;
+
     let unsubscribe: (() => void) | undefined;
 
-    pb?.collection("cars")
-      .subscribe("*", async () => {
-        loadCars(search, filters);
-      })
-      .then((sub) => {
+    // Set up subscription
+    const setupSubscription = async () => {
+      try {
+        const sub = await pb.collection("cars").subscribe("*", async () => {
+          loadCars(search, filters);
+        });
         unsubscribe = sub;
-      });
+      } catch (error) {
+        console.error("Error setting up PocketBase subscription:", error);
+      }
+    };
+
+    setupSubscription();
 
     return () => {
       unsubscribe?.();

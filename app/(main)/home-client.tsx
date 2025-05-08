@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { CarList } from "@/components/car-list";
 import { Car } from "@/types/car";
+import { useState, useEffect } from "react";
 
 interface HomeClientProps {
   initialCars: Car[];
@@ -13,6 +14,12 @@ interface HomeClientProps {
 
 export function HomeClient({ initialCars }: HomeClientProps) {
   const { t } = useTranslation();
+  const [mounted, setMounted] = useState(false);
+
+  // Only update the mounted state on the client after hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -21,10 +28,15 @@ export function HomeClient({ initialCars }: HomeClientProps) {
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              {t("home.hero.title")}
+              {/* Always use Indonesian for initial render to match server */}
+              {!mounted
+                ? "Temukan Mobil Bekas Impian Anda"
+                : t("home.hero.title")}
             </h1>
             <p className="text-xl text-slate-200">
-              {t("home.hero.subtitle")}
+              {!mounted
+                ? "Jelajahi koleksi mobil bekas berkualitas kami. Setiap mobil dilengkapi dengan riwayat lengkap dan inspeksi menyeluruh."
+                : t("home.hero.subtitle")}
             </p>
             <div className="flex justify-center gap-4">
               <Button
@@ -33,7 +45,8 @@ export function HomeClient({ initialCars }: HomeClientProps) {
                 className="bg-white text-slate-900 hover:bg-slate-100"
               >
                 <Link href="#cars">
-                  {t("home.hero.cta")} <ArrowRight className="ml-2 h-4 w-4" />
+                  {!mounted ? "Lihat Mobil" : t("home.hero.cta")}{" "}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
@@ -46,10 +59,12 @@ export function HomeClient({ initialCars }: HomeClientProps) {
         <div className="space-y-10">
           <div className="space-y-2 text-center" id="cars">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-              {t("home.available.title")}
+              {!mounted ? "Mobil Tersedia" : t("home.available.title")}
             </h2>
             <p className="text-slate-600">
-              {t("home.available.subtitle")}
+              {!mounted
+                ? "Pilih dari koleksi kendaraan berkualitas kami untuk perjalanan Anda"
+                : t("home.available.subtitle")}
             </p>
           </div>
           <CarList initialCars={initialCars} className="pb-8" />
@@ -76,9 +91,13 @@ export function HomeClient({ initialCars }: HomeClientProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold">{t("home.trust.quality.title")}</h3>
+              <h3 className="text-xl font-semibold">
+                {!mounted ? "Kualitas Terjamin" : t("home.trust.quality.title")}
+              </h3>
               <p className="text-slate-300">
-                {t("home.trust.quality.desc")}
+                {!mounted
+                  ? "Setiap mobil menjalani inspeksi menyeluruh"
+                  : t("home.trust.quality.desc")}
               </p>
             </div>
             <div className="text-center space-y-3">
@@ -97,9 +116,13 @@ export function HomeClient({ initialCars }: HomeClientProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold">{t("home.trust.price.title")}</h3>
+              <h3 className="text-xl font-semibold">
+                {!mounted ? "Harga Terbaik" : t("home.trust.price.title")}
+              </h3>
               <p className="text-slate-300">
-                {t("home.trust.price.desc")}
+                {!mounted
+                  ? "Harga kompetitif untuk semua kendaraan"
+                  : t("home.trust.price.desc")}
               </p>
             </div>
             <div className="text-center space-y-3">
@@ -118,8 +141,14 @@ export function HomeClient({ initialCars }: HomeClientProps) {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold">{t("home.trust.finance.title")}</h3>
-              <p className="text-slate-300">{t("home.trust.finance.desc")}</p>
+              <h3 className="text-xl font-semibold">
+                {!mounted ? "Pembiayaan Mudah" : t("home.trust.finance.title")}
+              </h3>
+              <p className="text-slate-300">
+                {!mounted
+                  ? "Pilihan pembayaran yang fleksibel"
+                  : t("home.trust.finance.desc")}
+              </p>
             </div>
           </div>
         </div>

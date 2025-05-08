@@ -18,34 +18,47 @@ const resources = {
   },
 };
 
-// Inisialisasi i18n hanya di sisi client
+// Initialize i18n for both client and server
+i18n.use(initReactI18next).init({
+  resources,
+  fallbackLng: "id",
+  interpolation: {
+    escapeValue: false, // not needed for react as it escapes by default
+  },
+});
+
+// Add language detection only on the client side
 if (typeof window !== "undefined") {
-  i18n
-    // detect user language
-    .use(LanguageDetector)
-    // pass the i18n instance to react-i18next
-    .use(initReactI18next)
-    // init i18next
-    .init({
-      resources,
-      fallbackLng: "id",
-      interpolation: {
-        escapeValue: false, // not needed for react as it escapes by default
-      },
-      detection: {
+  // This will only run on the client
+  const savedLang = localStorage.getItem("i18nextLng");
+
+  // If there's a saved language, use it
+  if (savedLang) {
+    i18n.changeLanguage(savedLang);
+  } else {
+    // Otherwise, detect the language but don't change it immediately
+    // This prevents hydration mismatch
+    const detector = new LanguageDetector();
+    detector.init(
+      {
         order: ["localStorage", "navigator"],
         caches: ["localStorage"],
       },
-    });
-} else {
-  // Inisialisasi minimal untuk SSR
-  i18n.use(initReactI18next).init({
-    resources,
-    fallbackLng: "id",
-    interpolation: {
-      escapeValue: false,
-    },
-  });
+      {
+        // This is a dummy object to satisfy the API
+        init: () => {},
+        changeLanguage: () => {},
+      } as any
+    );
+
+    // Get the detected language
+    const detectedLang = detector.detect();
+
+    // Store it for future use, but don't change the language yet
+    if (detectedLang) {
+      localStorage.setItem("i18nextLng", detectedLang);
+    }
+  }
 }
 
 export default i18n;
