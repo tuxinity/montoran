@@ -34,6 +34,21 @@ interface NewSaleDialogProps {
   preselectedCarId?: string;
 }
 
+// Helper functions for price formatting
+const formatPrice = (value: string) => {
+  // Remove all non-digit characters
+  const numericValue = value.replace(/\D/g, "");
+
+  // Format with commas
+  const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  return formattedValue;
+};
+
+const parsePrice = (value: string) => {
+  return parseFloat(value.replace(/,/g, ""));
+};
+
 export const NewSaleDialog = ({
   open,
   onClose,
@@ -86,6 +101,21 @@ export const NewSaleDialog = ({
     });
   }, []);
 
+  // formatPrice is defined later in the file
+
+  // Define handleCarSelect before using it in useEffect
+  const handleCarSelect = useCallback(
+    (carId: string) => {
+      setCarId(carId);
+      const selectedCar = cars.find((car) => car.id === carId);
+      if (selectedCar) {
+        // Format the price with commas
+        setPrice(formatPrice(selectedCar.sell_price.toString()));
+      }
+    },
+    [cars]
+  );
+
   useEffect(() => {
     if (open) {
       resetForm();
@@ -94,17 +124,10 @@ export const NewSaleDialog = ({
 
   useEffect(() => {
     if (preselectedCarId) {
-      setCarId(preselectedCarId);
+      // Use handleCarSelect to set both the car ID and price
+      handleCarSelect(preselectedCarId);
     }
-  }, [preselectedCarId]);
-
-  const handleCarSelect = (carId: string) => {
-    setCarId(carId);
-    const selectedCar = cars.find((car) => car.id === carId);
-    if (selectedCar) {
-      setPrice(selectedCar.sell_price.toString());
-    }
-  };
+  }, [preselectedCarId, handleCarSelect]);
 
   const handleCustomerSelect = (value: string) => {
     if (value === "add-new") {
@@ -187,19 +210,7 @@ export const NewSaleDialog = ({
     }
   };
 
-  const formatPrice = (value: string) => {
-    // Remove all non-digit characters
-    const numericValue = value.replace(/\D/g, "");
-
-    // Format with commas
-    const formattedValue = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-    return formattedValue;
-  };
-
-  const parsePrice = (value: string) => {
-    return parseFloat(value.replace(/,/g, ""));
-  };
+  // Moved to the top for use in handleCarSelect
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedValue = formatPrice(e.target.value);
@@ -480,7 +491,7 @@ export const NewSaleDialog = ({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

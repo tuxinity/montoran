@@ -47,6 +47,9 @@ export default function SalesDashboard() {
     direction: "desc",
   });
   const [showNewSaleDialog, setShowNewSaleDialog] = useState(false);
+  const [preselectedCarId, setPreselectedCarId] = useState<string | undefined>(
+    undefined
+  );
   const [summary, setSummary] = useState({
     totalSales: 0,
     totalRevenue: 0,
@@ -253,6 +256,8 @@ export default function SalesDashboard() {
         return;
       }
 
+      // Set the preselected car ID and open the dialog
+      setPreselectedCarId(carId);
       setShowNewSaleDialog(true);
 
       toast({
@@ -489,8 +494,12 @@ export default function SalesDashboard() {
 
       <NewSaleDialog
         open={showNewSaleDialog}
-        onClose={() => setShowNewSaleDialog(false)}
+        onClose={() => {
+          setShowNewSaleDialog(false);
+          setPreselectedCarId(undefined); // Reset the preselected car ID when closing the dialog
+        }}
         onSubmit={handleNewSale}
+        preselectedCarId={preselectedCarId}
       />
 
       <DeleteSaleDialog

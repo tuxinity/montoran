@@ -34,10 +34,55 @@ const AuthApi: IAuthAPI = {
       const authData = await pb
         .collection("users")
         .authWithPassword(email, password);
-      Cookies.set("pb_auth", pb.authStore.token, {
+
+      // Set cookie with expiration date (7 days) using both cookie names
+      const token = pb.authStore.token;
+
+      // Set pb_auth cookie
+      Cookies.set("pb_auth", token, {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
+        expires: 7, // 7 days
+        path: "/",
       });
+
+      // Also set pocketbase_auth cookie for better compatibility
+      Cookies.set("pocketbase_auth", token, {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        expires: 7, // 7 days
+        path: "/",
+      });
+
+      // Also set using document.cookie for better compatibility
+      if (typeof window !== "undefined") {
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7);
+
+        document.cookie = `pb_auth=${token}; expires=${expiryDate.toUTCString()}; path=/; ${
+          process.env.NODE_ENV === "production" ? "secure;" : ""
+        } samesite=strict`;
+        document.cookie = `pocketbase_auth=${token}; expires=${expiryDate.toUTCString()}; path=/; ${
+          process.env.NODE_ENV === "production" ? "secure;" : ""
+        } samesite=strict`;
+
+        // Store auth data in localStorage for hard refresh recovery
+        const userData = {
+          id: authData.record.id,
+          email: authData.record.email,
+          name: authData.record.name || authData.record.username || "User",
+          collectionId: "users",
+          collectionName: "users",
+        };
+
+        const localAuthData = {
+          token: token,
+          user: userData,
+          expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+        };
+        localStorage.setItem("montoran_auth", JSON.stringify(localAuthData));
+      }
+
       return {
         token: authData.token,
         user: {
@@ -116,7 +161,34 @@ const AuthApi: IAuthAPI = {
 
   logout: () => {
     pb.authStore.clear();
+
+    // Remove all auth cookies
     Cookies.remove("pb_auth");
+    Cookies.remove("pb_auth", { path: "/" });
+    Cookies.remove("pocketbase_auth");
+    Cookies.remove("pocketbase_auth", { path: "/" });
+
+    // Also try to remove using document.cookie for completeness
+    if (typeof window !== "undefined") {
+      const domain = window.location.hostname;
+
+      // Try different combinations of paths and domains
+      document.cookie = `pb_auth=; Max-Age=0; path=/; domain=${domain}`;
+      document.cookie = `pb_auth=; Max-Age=0; path=/;`;
+      document.cookie = `pocketbase_auth=; Max-Age=0; path=/; domain=${domain}`;
+      document.cookie = `pocketbase_auth=; Max-Age=0; path=/;`;
+
+      // For localhost
+      if (domain === "localhost") {
+        document.cookie = `pb_auth=; Max-Age=0; path=/;`;
+        document.cookie = `pocketbase_auth=; Max-Age=0; path=/;`;
+      }
+
+      // Clear localStorage
+      localStorage.removeItem("montoran_auth");
+
+      console.log("Logged out and cleared all auth cookies and localStorage");
+    }
   },
 };
 
